@@ -3,11 +3,9 @@
 
 import sys
 import os
-
 import torch
 import math
 import numpy as np
-
 from PIL import Image, ImageDraw, ImageFilter
 
 
@@ -84,7 +82,7 @@ class Make_Tiles:
         return {
             "required": {
                 "image": ("IMAGE",),
-                "tile_calc": ("TILE_CALC",),
+                "tiles_data": ("TILES_DATA",),
                 #"tile_width": ("INT", {"default": 512, "min": 1, "max": 10000}),
                 #"tile_height": ("INT", {"default": 512, "min": 1, "max": 10000}),
                 #"overlap_x": ("INT", {"default": 0, "min": 0, "max": 10000}),
@@ -96,15 +94,15 @@ class Make_Tiles:
     FUNCTION = "process"
     CATEGORY = "Steudio"
 
-    def process(self, image, tile_calc,):
+    def process(self, image, tiles_data,):
         image_height = image.shape[1]
         image_width = image.shape[2]
 
-        tile_width = tile_calc['tile_width']
-        tile_height = tile_calc['tile_height']
-        overlap_x = tile_calc['overlap_x']
-        overlap_y = tile_calc['overlap_y']
-        grid_n = tile_calc['grid_n']
+        tile_width = tiles_data['tile_width']
+        tile_height = tiles_data['tile_height']
+        overlap_x = tiles_data['overlap_x']
+        overlap_y = tiles_data['overlap_y']
+        grid_n = tiles_data['grid_n']
 
         tile_coordinates = generate_tiles(
             image_width, image_height, tile_width, tile_height, overlap_x, overlap_y,
@@ -136,7 +134,7 @@ class Unmake_Tiles:
         return {
             "required": {
                 "images": ("IMAGE",),
-                "tile_calc": ("TILE_CALC",),
+                "tiles_data": ("TILES_DATA",),
                 "overlap_factor": ("INT",{"default": 4, "min": 1, "max": 100}),  # Added blur blend parameter
                 "blur_factor": ("INT",{"default": 20, "min": 1, "max": 100}),  # Added blur blend parameter
             }
@@ -146,15 +144,14 @@ class Unmake_Tiles:
     FUNCTION = "process"
     CATEGORY = "Steudio"
 
-    def process(self, images, tile_calc, overlap_factor, blur_factor,):  # Added index parameter
+    def process(self, images, tiles_data, overlap_factor, blur_factor,):  # Added index parameter
 
 
-        # Import from Tile_calc
-        upscaled_width = tile_calc['upscaled_width']
-        upscaled_height = tile_calc['upscaled_height']
-        overlap_x = tile_calc['overlap_x']
-        overlap_y = tile_calc['overlap_y']
-        grid_n = tile_calc['grid_n']
+        # Import from tiles_data
+        upscaled_width = tiles_data['upscaled_width']
+        upscaled_height = tiles_data['upscaled_height']
+        overlap_x = tiles_data['overlap_x']
+        overlap_y = tiles_data['overlap_y']
 
         # Import from Images
         tile_width = images.shape[2]
@@ -225,7 +222,7 @@ class Unmake_Tiles:
         return [output]
 
     
-class Make_Tile_Calc:
+class Make_Tiles_Math:
     @classmethod
     def INPUT_TYPES(s):        
         Overlap_list = ["None",
@@ -255,8 +252,8 @@ class Make_Tile_Calc:
         }
     
 
-    RETURN_TYPES = ("INT", "INT", "TILE_CALC",)
-    RETURN_NAMES = ("upscaled_width", "upscaled_height", "tile_calc",)
+    RETURN_TYPES = ("INT", "INT", "TILES_DATA",)
+    RETURN_NAMES = ("image_width", "image_height", "tiles_data",)
     FUNCTION = "calc"
     CATEGORY = "Steudio"
 
@@ -305,7 +302,7 @@ class Make_Tile_Calc:
         effective_upscale = upscaled_width / tile_width
 
 
-        tile_calc = {'upscaled_width': upscaled_width,
+        tiles_data = {'upscaled_width': upscaled_width,
                     'upscaled_height': upscaled_height,
                     'tile_width': tile_width,
                     'tile_height': tile_height,
@@ -316,17 +313,17 @@ class Make_Tile_Calc:
                     }
 
     
-        return [upscaled_width, upscaled_height, tile_calc]
+        return [upscaled_width, upscaled_height, tiles_data]
 
 
 NODE_CLASS_MAPPINGS = {
     "Make Tiles": Make_Tiles,
     "Unmake Tiles": Unmake_Tiles,
-    "Make Tile Calc": Make_Tile_Calc,
+    "Make Tiles Math": Make_Tiles_Math,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "Make Tiles": "Make_Tiles",
     "Unmake Tiles": "Unmake_Tiles",
-    "Make Tile Calc": "Make_Tile_Calc",
+    "Make Tiles Math": "Make_Tiles_Math",
 }

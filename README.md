@@ -1,2 +1,2 @@
 # ComfyUI_Steudio
-WIP
+Some ComfyUI nodes
