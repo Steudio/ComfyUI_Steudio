@@ -1,5 +1,5 @@
-# Original nodes from https://github.com/kinfolk0117/ComfyUI_SimpleTiles
-# Modified by Steudio
+# Inspired by https://github.com/kinfolk0117/ComfyUI_SimpleTiles
+# Created by Steudio
 
 import sys
 import os
@@ -8,72 +8,180 @@ import math
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
-
-
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "comfy"))
-
-
-def generate_tiles(image_width, image_height, tile_width, tile_height, overlap_x, overlap_y):
+def generate_tiles(image_width, image_height, tile_width, tile_height, overlap_x, overlap_y, grid_x, grid_y, tile_order):
     tiles = []
-    matrix = [['' for _ in range((image_width + tile_width - overlap_x - 1) // (tile_width - overlap_x))] for _ in range((image_height + tile_height - overlap_y - 1) // (tile_height - overlap_y))]
+    num_columns = grid_x
+    num_rows = grid_y
+    matrix = [['' for _ in range(num_columns)] for _ in range(num_rows)]
 
-    y = 0
-    row = 0
-    while y < image_height:
-        next_y = y + tile_height - overlap_y
-        if y + tile_height >= image_height:
-            y = max(image_height - tile_height, 0)
-            next_y = image_height
-
-        x = 0
-        col = 0
-        while x < image_width:
-            next_x = x + tile_width - overlap_x
-            if x + tile_width >= image_width:
-                x = max(image_width - tile_width, 0)
-                next_x = image_width
-
+    # Generate tiles in grid layout
+    for row in range(grid_y):
+        y = row * (tile_height - overlap_y)
+        if row == grid_y - 1:
+            y = image_height - tile_height
+        for col in range(grid_x):
+            x = col * (tile_width - overlap_x)
+            if col == grid_x - 1:
+                x = image_width - tile_width
             tiles.append((x, y))
             matrix[row][col] = f"({x},{y})"
 
-            if next_x >= image_width:
-                break
-            x = next_x
-            col += 1
-
-        if next_y >= image_height:
-            break
-        y = next_y
-        row += 1
-
-    # Define the order of processing
-    center_x = image_width / 2
-    center_y = image_height / 2
-    corners = [(0, 0), (image_width - tile_width, 0), (0, image_height - tile_height), (image_width - tile_width, image_height - tile_height)]
-    middle = (center_x - tile_width / 2, center_y - tile_height / 2)
-
-    def tile_priority(tile):
-        x, y = tile
-        if tile in corners:
-            return 0
-        elif y == center_y - tile_height / 2 and x != center_x - tile_width / 2:
-            return 1
-        elif x == center_x - tile_width / 2 and y != center_y - tile_height / 2:
-            return 2
-        elif tile == middle:
-            return 4  # Ensure the center tile is processed last
-        else:
-            return 3
-
-    tiles.sort(key=tile_priority)
-
-    # Print the matrix with empty space before and after
     print("\n" * 2)
     for row in matrix:
         print(' '.join(row))
     print("\n" * 2)
+    print(f"tiles: {tiles}")
 
+    if tile_order == 1:  # Spiral order
+        # Rearrange tiles in an outward clockwise spiral pattern starting from the center
+        spiral_tiles = []
+        center_x, center_y = num_columns // 2, num_rows // 2
+        x, y = center_x, center_y
+        dx, dy = 1, 0  # Start moving right
+        layer, steps = 1, 0
+
+        while len(spiral_tiles) < len(tiles):
+            for _ in range(2):
+                for _ in range(layer):
+                    if 0 <= x < num_columns and 0 <= y < num_rows:
+                        index = y * num_columns + x
+                        if index < len(tiles):
+                            spiral_tiles.append(tiles[index])
+                        steps += 1
+                    x += dx
+                    y += dy
+                dx, dy = -dy, dx  # Rotate direction clockwise
+            layer += 1
+
+        # Reverse the tiles
+        spiral_tiles.reverse()
+        tiles = spiral_tiles
+
+    print(f"tiles: {tiles}")
     return tiles
+
+
+class Make_Tiles_Math:
+    @classmethod
+    def INPUT_TYPES(s):
+        Overlap_list = [
+                "None",
+                    '1/64 Tile',
+                    '1/32 Tile',
+                    '1/16 Tile',
+                    '1/8 Tile',
+                    '1/4 Tile',
+                    '1/2 Tile',
+                    ]
+        tile_order_list = [
+                "linear", 'spiral',]
+        return {
+            "required": {
+                "image": ("IMAGE",),
+                "tile_width": ("INT", {"default": 1024,}),
+                "tile_height": ("INT", {"default": 1024,}),
+                "overlap": (Overlap_list, {"default": "1/32 Tile",}),
+                "scale_factor": ("INT", {"default": 3, "min":2, "max":9,}),
+                "tile_order": (tile_order_list, {"default": "spiral",}),
+            }
+        }
+
+
+    RETURN_TYPES = ("INT", "INT", "TILES_DATA", "UI_DATA",)
+    RETURN_NAMES = ("image_width", "image_height", "tiles_data","ui_data",)
+    OUTPUT_NODE = True
+    FUNCTION = "calc"
+    CATEGORY = "Steudio"
+
+    def calc(self, image, tile_width, tile_height, overlap, scale_factor, tile_order,):
+
+        if tile_order == "linear":
+            tile_order = 0
+        elif tile_order == "spiral":
+            tile_order = 1
+
+
+        if overlap == "None":
+            overlap = 0
+        elif overlap == "1/2 Tile":
+            overlap = 0.5
+        elif overlap == "1/4 Tile":
+            overlap = 0.25
+        elif overlap == "1/8 Tile":
+            overlap = 0.125
+        elif overlap == "1/16 Tile":
+            overlap = 0.0625
+        elif overlap == "1/32 Tile":
+            overlap = 0.03125
+        elif overlap == "1/64 Tile":
+            overlap = 0.015625
+
+        _, height, width, _ = image.shape
+
+        # Calculate initial overlaps
+        overlap_x = int(overlap * tile_width)
+        overlap_y = int(overlap * tile_height)
+
+        if width <= height:
+            # Calculate initial upscaled width first
+            upscaled_width = width * scale_factor
+            # Determine grid_x
+            grid_x = math.ceil(upscaled_width / tile_width)
+            # Recalculate upscaled width
+            upscaled_width = (tile_width * grid_x) - (overlap_x * (grid_x - 1))
+            # Calculate upscale ratio
+            upscale_ratio = upscaled_width / width
+            # Determine upscaled height
+            upscaled_height = int(height * upscale_ratio)
+            # Determine grid_y
+            grid_y = math.ceil((upscaled_height - overlap_y) / (tile_height - overlap_y))
+            # Recalculate overlap_y
+            overlap_y = round((tile_height * grid_y - upscaled_height) / (grid_y - 1))
+        else:
+            # Calculate initial upscaled height first
+            upscaled_height = height * scale_factor
+            # Determine grid_y
+            grid_y = math.ceil(upscaled_height / tile_height)
+            # Recalculate upscaled height
+            upscaled_height = (tile_height * grid_y) - (overlap_y * (grid_y - 1))
+            # Calculate upscale ratio
+            upscale_ratio = upscaled_height / height
+            # Determine upscaled width
+            upscaled_width = int(width * upscale_ratio)
+            # Determine grid_x
+            grid_x = math.ceil((upscaled_width - overlap_x) / (tile_width - overlap_x))
+            # Recalculate overlap_x
+            overlap_x = round((tile_width * grid_x - upscaled_width) / (grid_x - 1))
+
+
+        effective_upscale = round(upscaled_width / width, 2)
+        upscaled_image = f"{upscaled_width}x{upscaled_height}"
+        # tile_size = f"{tile_width}x{tile_height}"
+        grid_n_xy = f"{grid_x}x{grid_y}"
+        # overlap_xy = f"x{overlap_x} y{overlap_y}"
+
+
+        tiles_data = {'upscaled_width': upscaled_width,
+                    'upscaled_height': upscaled_height,
+                    'tile_width': tile_width,
+                    'tile_height': tile_height,
+                    'overlap_x': overlap_x,
+                    'overlap_y': overlap_y,
+                    'grid_x': grid_x,
+                    'grid_y': grid_y,
+                    'tile_order': tile_order,
+                    }
+
+        ui_data = {
+            'Grid':grid_n_xy,
+            'Image Size':upscaled_image,
+            # 'Tile Size':tile_size,
+            'overlap_x': overlap_x,
+            'overlap_y': overlap_y,
+            'effective_upscale': effective_upscale,
+            }
+        return [upscaled_width, upscaled_height, tiles_data,ui_data]
+        # return {"ui": {"text": (upscaled_image,)},  "result": (upscaled_width, upscaled_height, tiles_data)}
 
 
 class Make_Tiles:
@@ -83,10 +191,6 @@ class Make_Tiles:
             "required": {
                 "image": ("IMAGE",),
                 "tiles_data": ("TILES_DATA",),
-                #"tile_width": ("INT", {"default": 512, "min": 1, "max": 10000}),
-                #"tile_height": ("INT", {"default": 512, "min": 1, "max": 10000}),
-                #"overlap_x": ("INT", {"default": 0, "min": 0, "max": 10000}),
-                #"overlap_y": ("INT", {"default": 0, "min": 0, "max": 10000}),
             }
         }
 
@@ -102,10 +206,12 @@ class Make_Tiles:
         tile_height = tiles_data['tile_height']
         overlap_x = tiles_data['overlap_x']
         overlap_y = tiles_data['overlap_y']
-        grid_n = tiles_data['grid_n']
+        grid_x = tiles_data['grid_x']
+        grid_y = tiles_data['grid_y']
+        tile_order = tiles_data['tile_order']
 
         tile_coordinates = generate_tiles(
-            image_width, image_height, tile_width, tile_height, overlap_x, overlap_y,
+            image_width, image_height, tile_width, tile_height, overlap_x, overlap_y, grid_x, grid_y, tile_order
         )
 
         iteration = 1
@@ -152,6 +258,9 @@ class Unmake_Tiles:
         upscaled_height = tiles_data['upscaled_height']
         overlap_x = tiles_data['overlap_x']
         overlap_y = tiles_data['overlap_y']
+        grid_x = tiles_data['grid_x']
+        grid_y = tiles_data['grid_y']
+        tile_order = tiles_data['tile_order']
 
         # Import from Images
         tile_width = images.shape[2]
@@ -166,7 +275,7 @@ class Unmake_Tiles:
         blend_y = overlap_y //blur_factor
 
         tile_coordinates = generate_tiles(
-            upscaled_width, upscaled_height, tile_width, tile_height, overlap_x, overlap_y
+            upscaled_width, upscaled_height, tile_width, tile_height, overlap_x, overlap_y, grid_x, grid_y, tile_order
         )
 
         original_shape = (1, upscaled_height, upscaled_width, 3)
@@ -186,29 +295,43 @@ class Unmake_Tiles:
             draw = ImageDraw.Draw(mask)
 
             # Do not apply gaussian to tile at the edge of the image
-            # Detect corners
-            if x == 0 and y == 0:
+            # 1234 Detect corners top/left top/right bottom/left bottom/right and grid >1
+            if x == 0 and y == 0 and upscaled_height != tile_height and upscaled_width != tile_width:
                 draw.rectangle([x, y, tile_width - f_overlap_x, tile_height - f_overlap_y], fill=255)
-            elif x == upscaled_width - tile_width and y == 0:
+            elif x == upscaled_width - tile_width and y == 0 and upscaled_height != tile_height and upscaled_width != tile_width:
                 draw.rectangle([f_overlap_x, y, tile_width, tile_height - f_overlap_y], fill=255)
-            elif x == 0 and y == upscaled_height - tile_height:
+            elif x == 0 and y == upscaled_height - tile_height and upscaled_height != tile_height and upscaled_width != tile_width:
                 draw.rectangle([x, f_overlap_y, tile_width - f_overlap_x, tile_height], fill=255)
-            elif x == upscaled_width - tile_width and y == upscaled_height - tile_height:
+            elif x == upscaled_width - tile_width and y == upscaled_height - tile_height and upscaled_height != tile_height and upscaled_width != tile_width:
                 draw.rectangle([f_overlap_x, f_overlap_y, tile_width, tile_height], fill=255)
-            # Detect top and bottom edges
-            elif x == 0 and y !=0 and y != upscaled_height - tile_height:
-                draw.rectangle([x, f_overlap_y, tile_width - f_overlap_x, tile_height - f_overlap_y], fill=255)
-            elif x == upscaled_width - tile_width and y !=0 and y != upscaled_height - tile_height:
-                 draw.rectangle([f_overlap_x, f_overlap_y, tile_width, tile_height - f_overlap_y], fill=255)
-            # Detect left and right edges
-            elif x != 0 and x !=upscaled_width - tile_width and y == 0:
+            # 5678 Detect corners 3 edges and grid =1
+            elif x == 0 and y == 0 and upscaled_height == tile_height:
+                draw.rectangle([x, y, tile_width - f_overlap_x, tile_height], fill=255)
+            elif x == upscaled_width - tile_width and y == 0 and upscaled_height == tile_height:
+                draw.rectangle([f_overlap_x, y, tile_width, tile_height], fill=255)
+            elif x == 0 and y == 0 and upscaled_width == tile_width:
+                draw.rectangle([x, y, tile_width, tile_height - f_overlap_y], fill=255)
+            elif x == 0 and y == upscaled_height - tile_height and upscaled_width == tile_width:
+                draw.rectangle([f_overlap_x, y, tile_width, tile_height], fill=255)
+            # 9 12 Detect top or bottom edges
+            elif x != 0 and x !=upscaled_width - tile_width and y == 0 and upscaled_height != tile_height and upscaled_width != tile_width:
                 draw.rectangle([f_overlap_x, y, tile_width - f_overlap_x, tile_height - f_overlap_y], fill=255)
-            elif x != 0 and x !=upscaled_width - tile_width and y == upscaled_height - tile_height:
+            elif x != 0 and x !=upscaled_width - tile_width and y == upscaled_height - tile_height and upscaled_height != tile_height and upscaled_width != tile_width:
                 draw.rectangle([f_overlap_x, f_overlap_y, tile_width - f_overlap_x, tile_height], fill=255)
-            # Detect not touching any edges
-            elif x != 0 and x !=upscaled_width - tile_width and y !=0 and y != upscaled_height - tile_height:
+            # 10 11 Detect left or right edges
+            elif x == 0 and y !=0 and y != upscaled_height - tile_height and upscaled_height != tile_height and upscaled_width != tile_width:
+                draw.rectangle([x, f_overlap_y, tile_width - f_overlap_x, tile_height - f_overlap_y], fill=255)
+            elif x == upscaled_width - tile_width and y !=0 and y != upscaled_height - tile_height and upscaled_height != tile_height and upscaled_width != tile_width:
+                draw.rectangle([f_overlap_x, f_overlap_y, tile_width, tile_height - f_overlap_y], fill=255)
+            # 13 Detect top and bottom edges
+            elif x != 0 and x !=upscaled_width - tile_width and y == 0 and upscaled_height == tile_height and upscaled_width != tile_width:
+                draw.rectangle([f_overlap_x, y, tile_width - f_overlap_x, tile_height], fill=255)
+            # 14 Detect left and right edges
+            elif x == 0 and y !=0 and y != upscaled_height - tile_height and upscaled_height != tile_height and upscaled_width == tile_width:
+                draw.rectangle([x, f_overlap_y, tile_width, tile_height - f_overlap_y], fill=255)
+            # 15 Detect not touching any edges
+            elif x != 0 and x !=upscaled_width - tile_width and y !=0 and y != upscaled_height - tile_height and upscaled_height != tile_height and upscaled_width != tile_width:
                 draw.rectangle([f_overlap_x, f_overlap_y, tile_width - f_overlap_x, tile_height - f_overlap_y], fill=255)
-
 
             mask = mask.filter(ImageFilter.GaussianBlur(radius=(blend_x, blend_y)))
 
@@ -221,99 +344,7 @@ class Unmake_Tiles:
             index += 1
         return [output]
 
-    
-class Make_Tiles_Math:
-    @classmethod
-    def INPUT_TYPES(s):        
-        Overlap_list = ["None",
-                    '1/64 Tile',
-                    '1/32 Tile',
-                    '1/16 Tile',
-                    '1/8 Tile',
-                    '1/4 Tile',
-                    '1/2 Tile',
-                    ]
-        Grid_list = ["2x2",
-                    "3x3",
-                    "4x4",
-                    "5x5",
-                    "6x6",
-                    "7x7",
-                    "8x8",
-                    "9x9",
-                    ]
-        return {
-            "required": {
-                "tile_width": ("INT", {"forceInput": True}),
-                "tile_height": ("INT", {"forceInput": True}),
-                "overlap": (Overlap_list,),
-                "grid_n": (Grid_list,),
-            }
-        }
-    
 
-    RETURN_TYPES = ("INT", "INT", "TILES_DATA",)
-    RETURN_NAMES = ("image_width", "image_height", "tiles_data",)
-    FUNCTION = "calc"
-    CATEGORY = "Steudio"
-
-    def calc(self, tile_width, tile_height, overlap, grid_n,):
-
-
-        if grid_n == "2x2":
-            grid_n = 2
-        elif grid_n == "3x3":
-            grid_n = 3
-        elif grid_n == "4x4":
-            grid_n = 4
-        elif grid_n == "5x5":
-            grid_n = 5
-        elif grid_n == "6x6":
-            grid_n = 6
-        elif grid_n == "7x7":
-            grid_n = 7
-        elif grid_n == "8x8":
-            grid_n = 8
-        elif grid_n == "9x9":
-            grid_n = 9
-
-        if overlap == "None":
-            overlap = 0
-        elif overlap == "1/2 Tile":
-            overlap = 0.5
-        elif overlap == "1/4 Tile":
-            overlap = 0.25
-        elif overlap == "1/8 Tile":
-            overlap = 0.125
-        elif overlap == "1/16 Tile":
-            overlap = 0.0625
-        elif overlap == "1/32 Tile":
-            overlap = 0.03125
-        elif overlap == "1/64 Tile":
-            overlap = 0.015625
-
-
-        overlap_x = int(overlap * tile_width)
-        overlap_y = int(overlap * tile_height)
-
-        upscaled_width = tile_width * grid_n - overlap_x * (grid_n - 1)
-        upscaled_height = tile_height * grid_n - overlap_y * (grid_n - 1)
-
-        effective_upscale = upscaled_width / tile_width
-
-
-        tiles_data = {'upscaled_width': upscaled_width,
-                    'upscaled_height': upscaled_height,
-                    'tile_width': tile_width,
-                    'tile_height': tile_height,
-                    'overlap_x': overlap_x,
-                    'overlap_y': overlap_y,
-                    'effective_upscale': effective_upscale,
-                    'grid_n':grid_n,
-                    }
-
-    
-        return [upscaled_width, upscaled_height, tiles_data]
 
 
 NODE_CLASS_MAPPINGS = {
