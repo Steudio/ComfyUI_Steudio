@@ -1,6 +1,6 @@
 <center>
 
-# **ComfyUI [**Steudio**](https://linktr.ee/steudio.com)**
+# **ComfyUI [**Steudio**](https://linktr.ee/steudio)**
 
 </center>
 
