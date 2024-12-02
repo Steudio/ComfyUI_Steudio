@@ -7,12 +7,12 @@
 # Divide and Conquer Node Suite
 Introducing a suite of nodes designed to enhance image upscaling. It calculates the optimal upscale resolution and seamlessly divides the image into tiles, ready for individual processing using your preferred workflow. After processing, the tiles are seamlessly merged into a larger image, offering sharper and more detailed visuals.The suite features three main nodes, with additional variants available for added flexibility.
 
-<img src="images/DaC_Suite.png" alt="Node" style="width: 100%;">
+<img src="Images/DaC_Suite.png" alt="Node" style="width: 100%;">
 
 ## 1. Divide and Conquer Algorithm | Node
 
 Taking into account tile dimensions, tile overlap, and the minimum scale factor, the node upscales the image to optimal dimensions, avoiding the creation of unnecessary tiles.<br>
-<img src="images/DaC_Algo.png" alt="Node" style="width: 50%;">
+<img src="Images/DaC_Algo.png" alt="Node" style="width: 50%;">
 
 ### Inputs / Outputs
 **`::image`**:
@@ -32,13 +32,13 @@ Data to pass along to following nodes: **Divide Image and Select Tile** and **Co
 **`overlap`**: This parameter specifies the minimum amount of overlap between adjacent tiles to help blend the tiles seamlessly when they are combined back together. *The default value is '1/32 Tile', and it can range from "None" to "1/2 tile".*<br>
 **`min_scale_factor`**: This parameter determines the minimal scale factor. The effective scale factor will be determined by the tile dimensions and tile overlap. *The default value is 3, and it can range from 1.01 to 8.*<br>
 **`tile_order`**: This parameter specifies the order in which the tiles are processed. It can be either 'linear' or 'spiral'. 'Linear' processes the tiles in a row-by-row manner, while 'spiral' processes them in an outward clockwise spiral pattern ending at the center. *The default value is "spiral".*<br>
-<img src="images/Order_Spiral.png" alt="Spiral" style="width: 25%;">
-<img src="images/Order_Linear.png" alt="Linear" style="width: 25%;">
+<img src="Images/Order_Spiral.png" alt="Spiral" style="width: 25%;">
+<img src="Images/Order_Linear.png" alt="Linear" style="width: 25%;">
 
 ## 2. Divide Image and Select Tile | Node
 Taking into account tile dimensions, tile overlap, and final image dimensions, the node calculates coordinates and divides the image into tiles.
 
-<img src="images/DaC_Divide.png" alt="Node" style="width: 50%;">
+<img src="Images/DaC_Divide.png" alt="Node" style="width: 50%;">
 
 **`::image`**:
 The image you want to upscale.<br>
@@ -55,7 +55,7 @@ All the tiles.<br>
 
 ## 3. Combine Tiles | Node
 Combines the processed tiles back into a single image, applying a **Gaussian blur mask** on the overlapping pixels to ensure smooth transitions between the overlapping tiles.<br>
-<img src="images/DaC_Combine.png" alt="Node" style="width: 50%;">
+<img src="Images/DaC_Combine.png" alt="Node" style="width: 50%;">
 
 **`::image`**:
 The tiles you want to combine into one upscaled image.<br>
@@ -139,13 +139,13 @@ Prompt is generate per tile using [ComfyUI-Florence2](https://github.com/kijai/C
 :exclamation:Ensure that only DIVIDE and CONQUER groups are muted (Set Group Nodes to Never)<br>
 :seven: Use the same folder as in :six:<br>
 
-A load images from folder node like [KJnodes LoadImagesFromFolderKJ](https://github.com/kijai/ComfyUI-KJNodes) is required to load the images to **Combine Tiles** node for processing.<br>
+A load Images from folder node like [KJnodes LoadImagesFromFolderKJ](https://github.com/kijai/ComfyUI-KJNodes) is required to load the Images to **Combine Tiles** node for processing.<br>
 :bowtie: Enjoy your masterpiece.<br>
 <img src="Images\Group_COMBINE.png" alt="Workflow" style="width: 100%;">
 </details>
 
 :100: cropped comparison:
-<img src="images/DaC_Side-by-side.png" alt="Workflow" style="width: 100%;">
+<img src="Images/DaC_Side-by-side.png" alt="Workflow" style="width: 100%;">
 
 ## TIPS
 - General upscaling guidelines do apply, but the **Divide and Conquer Node Suite** offers better control per tile, enabling higher detail transfer.
