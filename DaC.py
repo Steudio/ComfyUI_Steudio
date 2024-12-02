@@ -7,6 +7,36 @@ import torch
 import math
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
+import comfy.utils
+from comfy import model_management
+
+OVERLAP_DICT = {
+    "1/64 Tile": 0.015625,
+    "1/32 Tile": 0.03125,
+    "1/16 Tile": 0.0625,
+    "1/8 Tile": 0.125,
+    "1/4 Tile": 0.25,
+    "1/2 Tile": 0.5,
+    "None": 0
+}
+
+TILE_ORDER_DICT = {
+    "linear": 0,
+    "spiral": 1
+}
+
+SCALING_METHODS = [
+    "nearest-exact",
+    "bilinear",
+    "area",
+    "bicubic",
+    "lanczos"
+]
+
+MIN_SCALE_FACTOR_THRESHOLD = 1.01
+
+def calculate_overlap(tile_size, overlap_fraction):
+    return int(overlap_fraction * tile_size)
 
 def create_tile_coordinates(image_width, image_height, tile_width, tile_height, overlap_x, overlap_y, grid_x, grid_y, tile_order):
     tiles = []
@@ -62,28 +92,17 @@ def create_tile_coordinates(image_width, image_height, tile_width, tile_height, 
     return tiles
 
 
-class DaC_Algorithm:
+class DaC_Algorithm_No_Upscale:
     @classmethod
     def INPUT_TYPES(s):
-        Overlap_list = [
-                "None",
-                    '1/64 Tile',
-                    '1/32 Tile',
-                    '1/16 Tile',
-                    '1/8 Tile',
-                    '1/4 Tile',
-                    '1/2 Tile',
-                    ]
-        tile_order_list = [
-                "linear", 'spiral',]
         return {
             "required": {
                 "image": ("IMAGE",),
                 "tile_width": ("INT", {"default": 1024,}),
                 "tile_height": ("INT", {"default": 1024,}),
-                "overlap": (Overlap_list, {"default": "1/32 Tile",}),
-                "multiply_factor": ("INT", {"default": 3, "min":2, "max":9,}),
-                "tile_order": (tile_order_list, {"default": "spiral",}),
+                "overlap": (list(OVERLAP_DICT.keys()), {"default": "1/32 Tile",}),
+                "min_scale_factor": ("FLOAT", {"default": 3.0, "min":1.0, "max":8.0, }),
+                "tile_order": (list(TILE_ORDER_DICT.keys()), {"default": "spiral",}),
             }
         }
 
@@ -91,67 +110,54 @@ class DaC_Algorithm:
     RETURN_TYPES = ("INT", "INT", "DAC_DATA",)
     RETURN_NAMES = ("image_width", "image_height", "dac_data",)
     OUTPUT_NODE = True
-    FUNCTION = "Calc"
+    FUNCTION = "execute"
     CATEGORY = "Steudio/Divide and Conquer"
+    DESCRIPTION = """
+Calculate the best dimensions for upscaling an image
+while maintaining minimum tile overlap and scale factor constraints.
+Steudio
+"""
 
-    def Calc(self, image, tile_width, tile_height, overlap, multiply_factor, tile_order,):
+    def execute(self, image, tile_width, tile_height, overlap, min_scale_factor, tile_order):
 
-        if tile_order == "linear":
-            tile_order = 0
-        elif tile_order == "spiral":
-            tile_order = 1
-
-
-        if overlap == "None":
-            overlap = 0
-        elif overlap == "1/2 Tile":
-            overlap = 0.5
-        elif overlap == "1/4 Tile":
-            overlap = 0.25
-        elif overlap == "1/8 Tile":
-            overlap = 0.125
-        elif overlap == "1/16 Tile":
-            overlap = 0.0625
-        elif overlap == "1/32 Tile":
-            overlap = 0.03125
-        elif overlap == "1/64 Tile":
-            overlap = 0.015625
+        overlap = OVERLAP_DICT.get(overlap, 0)  # Default to 0 if the key is not found
+        tile_order = TILE_ORDER_DICT.get(tile_order, 0)  # Default to 0 if the key is not found
 
         _, height, width, _ = image.shape
 
-        # Calculate initial overlaps
-        overlap_x = int(overlap * tile_width)
-        overlap_y = int(overlap * tile_height)
+      # Calculate initial overlaps
+        overlap_x = calculate_overlap(tile_width, overlap)
+        overlap_y = calculate_overlap(tile_height, overlap)
+
+        # Ensure min_scale_factor is at least 1.01 to avoid divide by zero error
+        min_scale_factor = max(min_scale_factor, MIN_SCALE_FACTOR_THRESHOLD)
 
         if width <= height:
-            # Calculate initial upscaled width first
-            upscaled_width = width * multiply_factor
-            # Determine grid_x
-            grid_x = math.ceil(upscaled_width / tile_width)
-            # Recalculate upscaled width
-            upscaled_width = (tile_width * grid_x) - (overlap_x * (grid_x - 1))
-            # Calculate upscale ratio
-            upscale_ratio = upscaled_width / width
-            # Determine upscaled height
+            # Calculate initial upscaled width based on min_scale_factor
+            multiply_factor = math.ceil(min_scale_factor * width / tile_width)
+            while True:
+                upscaled_width = width * multiply_factor
+                grid_x = math.ceil(upscaled_width / tile_width)
+                upscaled_width = (tile_width * grid_x) - (overlap_x * (grid_x - 1))
+                upscale_ratio = upscaled_width / width
+                if upscale_ratio >= min_scale_factor:
+                    break
+                multiply_factor += 1
             upscaled_height = int(height * upscale_ratio)
-            # Determine grid_y
             grid_y = math.ceil((upscaled_height - overlap_y) / (tile_height - overlap_y))
-            # Recalculate overlap_y
             overlap_y = round((tile_height * grid_y - upscaled_height) / (grid_y - 1))
         else:
-            # Calculate initial upscaled height first
-            upscaled_height = height * multiply_factor
-            # Determine grid_y
-            grid_y = math.ceil(upscaled_height / tile_height)
-            # Recalculate upscaled height
-            upscaled_height = (tile_height * grid_y) - (overlap_y * (grid_y - 1))
-            # Calculate upscale ratio
-            upscale_ratio = upscaled_height / height
-            # Determine upscaled width
+            multiply_factor = math.ceil(min_scale_factor * height / tile_height)
+            while True:
+                upscaled_height = height * multiply_factor
+                grid_y = math.ceil(upscaled_height / tile_height)
+                upscaled_height = (tile_height * grid_y) - (overlap_y * (grid_y - 1))
+                upscale_ratio = upscaled_height / height
+                if upscale_ratio >= min_scale_factor:
+                    break
+                multiply_factor += 1
             upscaled_width = int(width * upscale_ratio)
-            # Determine grid_x
             grid_x = math.ceil((upscaled_width - overlap_x) / (tile_width - overlap_x))
-            # Recalculate overlap_x
             overlap_x = round((tile_width * grid_x - upscaled_width) / (grid_x - 1))
 
 
@@ -159,8 +165,7 @@ class DaC_Algorithm:
         upscaled_image = f"{upscaled_width}x{upscaled_height}"
         original_image = f"{width}x{height}"
         grid_n_xy = f"{grid_x}x{grid_y}"
-        # overlap_xy = f"x{overlap_x} y{overlap_y}"
-
+        Tiles_Q = grid_x * grid_y
 
         dac_data = {'upscaled_width': upscaled_width,
                     'upscaled_height': upscaled_height,
@@ -173,21 +178,215 @@ class DaC_Algorithm:
                     'tile_order': tile_order,
                     }
 
-        ui_data = {
-            'Original Image Size':original_image,
-            'Upscaled Image Size':upscaled_image,
-            'Grid':grid_n_xy,
-            'overlap_x': overlap_x,
-            'overlap_y': overlap_y,
-            'effective_upscale': effective_upscale,
-            }
-
-        print()
-        for key, value in ui_data.items():
-            print(f"{key}: {value}")
+        #Display results to panel
+        print("\n" * 2)
+        print("Divide and Conquer Algorithm:")
+        print('Original Image Size:', original_image)
+        print('Upscaled Image Size:', upscaled_image)
+        print(f"Grid: {grid_n_xy} ({Tiles_Q} tiles)")
+        print(f"Overlap_x: {overlap_x} pixels")
+        print(f"Overlap_y: {overlap_y} pixels")
+        print('Effective_upscale:', effective_upscale)
+        print("\n" * 2)
 
 
         return [upscaled_width, upscaled_height, dac_data]
+
+class DaC_Algorithm:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+                "upscale_model": ("UPSCALE_MODEL",),
+                "scaling_method": (SCALING_METHODS, {"default": "lanczos"}),           
+                "tile_width": ("INT", {"default": 1024,}),
+                "tile_height": ("INT", {"default": 1024,}),
+                "overlap": (list(OVERLAP_DICT.keys()), {"default": "1/32 Tile",}),
+                "min_scale_factor": ("FLOAT", {"default": 3.0, "min":1.0, "max":8.0, }),
+                "tile_order": (list(TILE_ORDER_DICT.keys()), {"default": "spiral",}),
+            },
+        }
+
+    RETURN_TYPES = ("IMAGE", "DAC_DATA",)
+    RETURN_NAMES = ("IMAGE", "dac_data",)
+    OUTPUT_NODE = True
+    FUNCTION = "execute"
+    CATEGORY = "Steudio/Divide and Conquer"
+    DESCRIPTION = """
+Calculate the best dimensions and upscale an image
+while maintaining minimum tile overlap and scale factor constraints.
+Steudio
+"""
+
+    def execute(self, image, upscale_model, scaling_method, tile_width, tile_height, overlap, min_scale_factor, tile_order):
+
+        overlap = OVERLAP_DICT.get(overlap, 0)  # Default to 0 if the key is not found
+        tile_order = TILE_ORDER_DICT.get(tile_order, 0)  # Default to 0 if the key is not found
+
+        _, height, width, _ = image.shape
+
+      # Calculate initial overlaps
+        overlap_x = calculate_overlap(tile_width, overlap)
+        overlap_y = calculate_overlap(tile_height, overlap)
+
+        # Ensure min_scale_factor is at least 1.01 to avoid divide by zero error
+        min_scale_factor = max(min_scale_factor, MIN_SCALE_FACTOR_THRESHOLD)
+
+        if width <= height:
+            # Calculate initial upscaled width based on min_scale_factor
+            multiply_factor = math.ceil(min_scale_factor * width / tile_width)
+            while True:
+                upscaled_width = width * multiply_factor
+                grid_x = math.ceil(upscaled_width / tile_width)
+                upscaled_width = (tile_width * grid_x) - (overlap_x * (grid_x - 1))
+                upscale_ratio = upscaled_width / width
+                if upscale_ratio >= min_scale_factor:
+                    break
+                multiply_factor += 1
+            upscaled_height = int(height * upscale_ratio)
+            grid_y = math.ceil((upscaled_height - overlap_y) / (tile_height - overlap_y))
+            overlap_y = round((tile_height * grid_y - upscaled_height) / (grid_y - 1))
+        else:
+            multiply_factor = math.ceil(min_scale_factor * height / tile_height)
+            while True:
+                upscaled_height = height * multiply_factor
+                grid_y = math.ceil(upscaled_height / tile_height)
+                upscaled_height = (tile_height * grid_y) - (overlap_y * (grid_y - 1))
+                upscale_ratio = upscaled_height / height
+                if upscale_ratio >= min_scale_factor:
+                    break
+                multiply_factor += 1
+            upscaled_width = int(width * upscale_ratio)
+            grid_x = math.ceil((upscaled_width - overlap_x) / (tile_width - overlap_x))
+            overlap_x = round((tile_width * grid_x - upscaled_width) / (grid_x - 1))
+
+
+        effective_upscale = round(upscaled_width / width, 2)
+        upscaled_image = f"{upscaled_width}x{upscaled_height}"
+        original_image = f"{width}x{height}"
+        grid_n_xy = f"{grid_x}x{grid_y}"
+        Tiles_Q = grid_x * grid_y
+    
+        dac_data = {
+            'upscaled_width': upscaled_width,
+            'upscaled_height': upscaled_height,
+            'tile_width': tile_width,
+            'tile_height': tile_height,
+            'overlap_x': overlap_x,
+            'overlap_y': overlap_y,
+            'grid_x': grid_x,
+            'grid_y': grid_y,
+            'tile_order': tile_order,
+        }
+
+        #Display results to panel
+        print("\n" * 2)
+        print("Divide and Conquer Algorithm:")
+        print('Original Image Size:', original_image)
+        print('Upscaled Image Size:', upscaled_image)
+        print(f"Grid: {grid_n_xy} ({Tiles_Q} tiles)")
+        print(f"Overlap_x: {overlap_x} pixels")
+        print(f"Overlap_y: {overlap_y} pixels")
+        print('Effective_upscale:', effective_upscale)
+        print("\n" * 2)
+
+        # Upscale the image with model
+        device = model_management.get_torch_device()
+        memory_required = model_management.module_size(upscale_model.model)
+        memory_required += (512 * 512 * 3) * image.element_size() * max(upscale_model.scale, 1.0) * 384.0
+        memory_required += image.nelement() * image.element_size()
+        model_management.free_memory(memory_required, device)
+
+        upscale_model.to(device)
+        in_img = image.movedim(-1, -3).to(device)
+
+        tile = 512
+        overlap_value = 32
+
+        oom = True
+        while oom:
+            try:
+                steps = in_img.shape[0] * comfy.utils.get_tiled_scale_steps(in_img.shape[3], in_img.shape[2], tile_x=tile, tile_y=tile, overlap=overlap_value)
+                pbar = comfy.utils.ProgressBar(steps)
+                s = comfy.utils.tiled_scale(in_img, lambda a: upscale_model(a), tile_x=tile, tile_y=tile, overlap=overlap_value, upscale_amount=upscale_model.scale, pbar=pbar)
+                oom = False
+            except model_management.OOM_EXCEPTION as e:
+                tile //= 2
+                if tile < 128:
+                    raise e
+
+        upscale_model.to("cpu")
+        Upscaled_with_Model = torch.clamp(s.movedim(-3, -1), min=0, max=1.0)
+
+        # Scale the image to match with algorithm results
+        if upscaled_width == 0 and upscaled_height == 0:
+            upscaled_image = Upscaled_with_Model
+        else:
+            samples = Upscaled_with_Model.movedim(-1, 1)
+
+            if upscaled_width == 0:
+                upscaled_width = max(1, round(samples.shape[3] * upscaled_height / samples.shape[2]))
+            elif upscaled_height == 0:
+                upscaled_height = max(1, round(samples.shape[2] * upscaled_width / samples.shape[3]))
+
+            upscaled_image = comfy.utils.common_upscale(samples, upscaled_width, upscaled_height, scaling_method, crop=0)
+            upscaled_image = upscaled_image.movedim(1, -1)
+
+        return (upscaled_image, dac_data)
+
+class Divide_Image_Select:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+                "dac_data": ("DAC_DATA",),
+                "position": ("INT", { "default": 0, "min": 0, "step": 1, "forceInput": True }),
+            },
+        }
+
+
+    RETURN_TYPES = ("IMAGE", "IMAGE",)
+    RETURN_NAMES = ("SELECTED TILE", "ALL TILES",)
+    FUNCTION = "execute"
+    CATEGORY = "Steudio/Divide and Conquer"
+
+    def execute(self, image, position, dac_data,):
+        image_height = image.shape[1]
+        image_width = image.shape[2]
+
+        tile_width = dac_data['tile_width']
+        tile_height = dac_data['tile_height']
+        overlap_x = dac_data['overlap_x']
+        overlap_y = dac_data['overlap_y']
+        grid_x = dac_data['grid_x']
+        grid_y = dac_data['grid_y']
+        tile_order = dac_data['tile_order']
+
+        tile_coordinates = create_tile_coordinates(
+            image_width, image_height, tile_width, tile_height, overlap_x, overlap_y, grid_x, grid_y, tile_order
+        )
+
+        iteration = 1
+
+        image_tiles = []
+        for tile_coordinate in tile_coordinates:
+            iteration += 1
+
+            image_tile = image[
+                :,
+                tile_coordinate[1] : tile_coordinate[1] + tile_height,
+                tile_coordinate[0] : tile_coordinate[0] + tile_width,
+                :,
+            ]
+
+            image_tiles.append(image_tile)
+
+        all_tiles = torch.stack(image_tiles).squeeze(1)
+        selected_tile = image_tiles[position]
+
+        return (selected_tile, all_tiles)
 
 class Divide_Image:
     @classmethod
@@ -234,9 +433,9 @@ class Divide_Image:
 
             image_tiles.append(image_tile)
 
-        tiles_tensor = torch.stack(image_tiles).squeeze(1)
+        all_tiles = torch.stack(image_tiles).squeeze(1)
 
-        return (tiles_tensor,)
+        return (all_tiles,)
 
 class Combine_Tiles:
     @classmethod
@@ -355,28 +554,16 @@ class Combine_Tiles:
 
 NODE_CLASS_MAPPINGS = {
     "Divide and Conquer Algorithm": DaC_Algorithm,
+    "Divide and Conquer Algorithm (No Upscale)": DaC_Algorithm_No_Upscale,
     "Divide Image": Divide_Image,
     "Combine Tiles": Combine_Tiles,
+    "Divide Image and Select Tile": Divide_Image_Select,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "Divide and Conquer Algorithm": "Divide and Conquer Algorithm",
+    "Divide and Conquer Algorithm (No Upscale)": "Divide and Conquer Algorithm (No Upscale)",
     "Divide Image": "Divide Image",
     "Combine Tiles": "Combine Tiles",
+    "Divide Image and Select Tile": "Divide Image and Select Tile",
 }
-
-
-# blur_factor
-# Purpose: Controls the amount of Gaussian blur applied to the mask used for blending the tiles.
-# Effect: A higher blur_factor results in a smoother transition between tiles, reducing visible seams. Conversely, a lower blur_factor will make the transitions sharper, which might reveal more seams.
-
-# overlap_factor
-# Purpose: Determines the extent of the overlap between adjacent tiles.
-# Effect: A higher overlap_factor reduces the effective overlap area, which can help in reducing redundancy and potential artifacts. A lower overlap_factor increases the overlap area, which can help in creating a more seamless blend but might introduce more redundancy.
-
-
-# Optimal Values
-# blur_factor: 15-25
-# Reason: This range provides a good balance between smooth transitions and maintaining detail. It helps to blend the tiles effectively without overly blurring the image.
-# overlap_factor: 3-6
-# Reason: This range ensures sufficient overlap to avoid visible seams while minimizing redundancy. It helps to create a seamless blend without excessive overlap that could lead to artifacts.
