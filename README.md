@@ -85,7 +85,7 @@ Divide and Conquer matrix:
 
 ## Workflow example
 Download the following workflow from
-[here](Examples\Workflow\Divide_and_Conquer_Workflow_Example.json)
+[here](Examples/Workflow/Divide_and_Conquer_Workflow_Example.json)
 or 
 drag and drop the workflow image into ComfyUI.
 
