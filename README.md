@@ -93,6 +93,7 @@ drag and drop the workflow image into ComfyUI.
 
 :grey_exclamation: This workflow uses the following optional nodes:<br>
 [Set/Get](https://github.com/kijai/ComfyUI-KJNodes) | 
+[Color Match](https://github.com/kijai/ComfyUI-KJNodes) | 
 [Image Comparer](https://github.com/rgthree/rgthree-comfy) | 
 [Display Any](https://github.com/rgthree/rgthree-comfy) |
 [ComfyUI-Florence2](https://github.com/kijai/ComfyUI-Florence2)
