@@ -99,6 +99,9 @@ drag and drop the workflow image into ComfyUI.
 [ComfyUI-Florence2](https://github.com/kijai/ComfyUI-Florence2)
 
 ## How to use this workflow
+<a href="https://youtu.be/gR-E_92vu0Q">
+    <img src="Images/Thumbnail_YT.png" alt="Youtube" style="width: 50%;">
+</a> <br>
 <details open><summary>ALGORITHM</summary>
 :one: Load your image.<br>
 
