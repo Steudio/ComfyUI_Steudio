@@ -4,7 +4,7 @@
 
 </center>
 
-# Divide and Conquer Node Suite (UPDATED:fire:)
+# Divide and Conquer Node Suite (UPDATED :fire:)
 Introducing a suite of nodes designed to enhance image upscaling. It calculates the optimal upscale resolution and seamlessly divides the image into tiles, ready for individual processing using your preferred workflow. After processing, the tiles are seamlessly merged into a larger image, offering sharper and more detailed visuals.The suite features three main nodes, with additional variants available for added flexibility.
 
 <img src="Images/DaC_Suite.png" alt="Node" style="width: 100%;">
