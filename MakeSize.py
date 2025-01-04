@@ -44,7 +44,7 @@ class Make_Size:
     
 
     FUNCTION = "Resolutions"
-    CATEGORY = "Steudio"
+    CATEGORY = "Steudio/Utils"
 
     def Resolutions(self, width, height, resolutions, swap_dimensions):
         

@@ -6,18 +6,18 @@ import os
 import torch
 import math
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter, ImageOps
 import comfy.utils
 from comfy import model_management
 
 OVERLAP_DICT = {
+    "None": 0,
     "1/64 Tile": 0.015625,
     "1/32 Tile": 0.03125,
     "1/16 Tile": 0.0625,
     "1/8 Tile": 0.125,
     "1/4 Tile": 0.25,
     "1/2 Tile": 0.5,
-    "None": 0
 }
 
 TILE_ORDER_DICT = {
@@ -100,7 +100,7 @@ class DaC_Algorithm_No_Upscale:
                 "image": ("IMAGE",),
                 "tile_width": ("INT", {"default": 1024,}),
                 "tile_height": ("INT", {"default": 1024,}),
-                "overlap": (list(OVERLAP_DICT.keys()), {"default": "1/32 Tile",}),
+                "min_overlap": (list(OVERLAP_DICT.keys()), {"default": "1/32 Tile",}),
                 "min_scale_factor": ("FLOAT", {"default": 3.0, "min":1.0, "max":8.0, }),
                 "tile_order": (list(TILE_ORDER_DICT.keys()), {"default": "spiral",}),
             }
@@ -111,7 +111,7 @@ class DaC_Algorithm_No_Upscale:
     RETURN_NAMES = ("image_width", "image_height", "dac_data",)
     OUTPUT_NODE = True
     FUNCTION = "execute"
-    CATEGORY = "Steudio/Divide and Conquer"
+    CATEGORY = "Steudio/Divide and Conquer/Advanced"
     DESCRIPTION = """
 Calculate the best dimensions for upscaling an image
 while maintaining minimum tile overlap and scale factor constraints.
@@ -120,7 +120,7 @@ Steudio
 
     def execute(self, image, tile_width, tile_height, overlap, min_scale_factor, tile_order):
 
-        overlap = OVERLAP_DICT.get(overlap, 0)  # Default to 0 if the key is not found
+        overlap = OVERLAP_DICT.get(min_overlap, 0)  # Default to 0 if the key is not found
         tile_order = TILE_ORDER_DICT.get(tile_order, 0)  # Default to 0 if the key is not found
 
         _, height, width, _ = image.shape
@@ -202,7 +202,7 @@ class DaC_Algorithm:
                 "scaling_method": (SCALING_METHODS, {"default": "lanczos"}),           
                 "tile_width": ("INT", {"default": 1024,}),
                 "tile_height": ("INT", {"default": 1024,}),
-                "overlap": (list(OVERLAP_DICT.keys()), {"default": "1/32 Tile",}),
+                "min_overlap": (list(OVERLAP_DICT.keys()), {"default": "1/32 Tile",}),
                 "min_scale_factor": ("FLOAT", {"default": 3.0, "min":1.0, "max":8.0, }),
                 "tile_order": (list(TILE_ORDER_DICT.keys()), {"default": "spiral",}),
             },
@@ -219,9 +219,9 @@ while maintaining minimum tile overlap and scale factor constraints.
 Steudio
 """
 
-    def execute(self, image, upscale_model, scaling_method, tile_width, tile_height, overlap, min_scale_factor, tile_order):
+    def execute(self, image, upscale_model, scaling_method, tile_width, tile_height, min_overlap, min_scale_factor, tile_order):
 
-        overlap = OVERLAP_DICT.get(overlap, 0)  # Default to 0 if the key is not found
+        overlap = OVERLAP_DICT.get(min_overlap, 0)  # Default to 0 if the key is not found
         tile_order = TILE_ORDER_DICT.get(tile_order, 0)  # Default to 0 if the key is not found
 
         _, height, width, _ = image.shape
@@ -342,13 +342,15 @@ class Divide_Image_Select:
             "required": {
                 "image": ("IMAGE",),
                 "dac_data": ("DAC_DATA",),
-                "position": ("INT", { "default": 0, "min": 0, "step": 1, "forceInput": True }),
+                "position": ("INT", { "default": 0, "min": 0, "step": 1, }),
+                # "position": ("INT", { "default": 0, "min": 0, "step": 1, "forceInput": True }),
             },
         }
 
 
     RETURN_TYPES = ("IMAGE", "IMAGE",)
     RETURN_NAMES = ("SELECTED TILE", "ALL TILES",)
+    OUTPUT_IS_LIST = (False, True)
     FUNCTION = "execute"
     CATEGORY = "Steudio/Divide and Conquer"
 
@@ -383,10 +385,10 @@ class Divide_Image_Select:
 
             image_tiles.append(image_tile)
 
-        all_tiles = torch.stack(image_tiles).squeeze(1)
+        all_tiles = torch.cat(image_tiles, dim=0)
         selected_tile = image_tiles[position]
 
-        return (selected_tile, all_tiles)
+        return (selected_tile, [all_tiles[i].unsqueeze(0) for i in range(all_tiles.shape[0])])
 
 class Divide_Image:
     @classmethod
@@ -399,8 +401,9 @@ class Divide_Image:
         }
 
     RETURN_TYPES = ("IMAGE",)
+    OUTPUT_IS_LIST = (True,)
     FUNCTION = "execute"
-    CATEGORY = "Steudio/Divide and Conquer"
+    CATEGORY = "Steudio/Divide and Conquer/Advanced"
 
     def execute(self, image, dac_data,):
         image_height = image.shape[1]
@@ -433,9 +436,10 @@ class Divide_Image:
 
             image_tiles.append(image_tile)
 
-        all_tiles = torch.stack(image_tiles).squeeze(1)
+        all_tiles = torch.cat(image_tiles, dim=0)
 
-        return (all_tiles,)
+        return ([all_tiles[i].unsqueeze(0) for i in range(all_tiles.shape[0])],)
+
 
 class Combine_Tiles:
     @classmethod
@@ -450,13 +454,25 @@ class Combine_Tiles:
         }
 
     RETURN_TYPES = ("IMAGE",)
+    INPUT_IS_LIST = True
     FUNCTION = "execute"
     CATEGORY = "Steudio/Divide and Conquer"
 
-    def execute(self, images, dac_data,):  # Added index parameter
+    def execute(self, images, dac_data,):
 
+        # Ensure `dac_data` is not a list
+        if isinstance(dac_data, list):
+            dac_data = dac_data[0]
+
+        # Combine images into a single tensor
+        out = []
+        for i in range(len(images)):
+            img = images[i]
+            out.append(img)
+        images = torch.stack(out).squeeze(1)
+        
         overlap_factor = 4
-        blur_factor = 20
+        # blur_factor = 20
 
         # Import from dac_data
         upscaled_width = dac_data['upscaled_width']
@@ -475,9 +491,15 @@ class Combine_Tiles:
         f_overlap_x = overlap_x //overlap_factor
         f_overlap_y = overlap_y //overlap_factor
 
+
+        # # Calculate the square root of overlap_x
+        # blend_x = overlap_x //blur_factor
+        # blend_y = overlap_y //blur_factor
+
         # Blend factor
-        blend_x = overlap_x //blur_factor
-        blend_y = overlap_y //blur_factor
+        blend_x = math.sqrt(overlap_x)
+        blend_y = math.sqrt(overlap_y)
+
 
         tile_coordinates = create_tile_coordinates(
             upscaled_width, upscaled_height, tile_width, tile_height, overlap_x, overlap_y, grid_x, grid_y, tile_order
@@ -548,7 +570,52 @@ class Combine_Tiles:
 
             index += 1
         return [output]
+    
 
+# Original LoadImagesFromFolderKJ from https://github.com/kijai/ComfyUI-KJNodes
+class Load_Images_into_List:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "directory": ("STRING", {"default": ""}),
+            },
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("image",)
+    OUTPUT_IS_LIST = (True,)
+    FUNCTION = "Load_Images_into_List"
+    CATEGORY = "Steudio/Utils"
+
+    def Load_Images_into_List(self, directory,):
+        if not os.path.isdir(directory):
+            raise FileNotFoundError(f"directory '{directory} cannot be found.'")
+        dir_files = os.listdir(directory)
+        if len(dir_files) == 0:
+            raise FileNotFoundError(f"No files in directory '{directory}'.")
+
+        # Filter files by extension
+        valid_extensions = ['.jpg', '.jpeg', '.png', '.webp']
+        dir_files = [f for f in dir_files if any(f.lower().endswith(ext) for ext in valid_extensions)]
+
+        dir_files = sorted(dir_files)
+        dir_files = [os.path.join(directory, x) for x in dir_files]
+
+        images = []
+
+        for image_path in dir_files:
+            if os.path.isdir(image_path) and os.path.ex:
+                continue
+            i = Image.open(image_path)
+            i = ImageOps.exif_transpose(i)
+            image = i.convert("RGB")
+            image = np.array(image).astype(np.float32) / 255.0
+            image = torch.from_numpy(image)[None,]
+            images.append(image)
+
+        images = torch.cat(images, dim=0)
+        return ([images[i].unsqueeze(0) for i in range(images.shape[0])],)
 
 
 
@@ -558,6 +625,7 @@ NODE_CLASS_MAPPINGS = {
     "Divide Image": Divide_Image,
     "Combine Tiles": Combine_Tiles,
     "Divide Image and Select Tile": Divide_Image_Select,
+    "Load Images into List": Load_Images_into_List,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -566,4 +634,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "Divide Image": "Divide Image",
     "Combine Tiles": "Combine Tiles",
     "Divide Image and Select Tile": "Divide Image and Select Tile",
+    "Load Images into List": "Load Images into List",
 }
