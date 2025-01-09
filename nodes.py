@@ -1,5 +1,5 @@
 from ComfyUI_Steudio.DaC import DaC_Algorithm, DaC_Algorithm_No_Upscale, Divide_Image, Combine_Tiles, Divide_Image_Select, Load_Images_into_List
-from ComfyUI_Steudio.MakeSize import Make_Size
+from ComfyUI_Steudio.Utils import Make_Size, Seed_Shifter, Range_List
 
 
 NODE_CLASS_MAPPINGS = {
@@ -9,6 +9,8 @@ NODE_CLASS_MAPPINGS = {
     "Combine Tiles": Combine_Tiles,
     "Divide Image and Select Tile": Divide_Image_Select,
     "Make Size": Make_Size,
+    "Seed Shifter": Seed_Shifter,
+    "Range List": Range_List,
     "Load Images into List": Load_Images_into_List,
 }
 
@@ -19,5 +21,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "Combine Tiles": "Combine Tiles",
     "Divide Image and Select Tile": "Divide Image and Select Tile",
     "Make Size": "Make_Size",
+    "Seed Shifter": "Seed Shifter",
+    "Range List": "Range List",
     "Load Images into List": "Load Images into List",
 }
