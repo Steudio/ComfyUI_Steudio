@@ -124,7 +124,7 @@ Steudio
         seeds = [(seed + seed_shifter + i) for i in range(batch)]
         return seeds,
 
-class Range_List:
+class Sequence_Generator:
     def __init__(self):
         pass
     
@@ -132,24 +132,22 @@ class Range_List:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "mode": (["Integer", "Float"], {"default": "Integer"}),
-                "any": ("STRING", {"multiline": False, "dynamicPrompts": False, "default": ""}),
+                "gen": ("STRING", {"multiline": False, "dynamicPrompts": False, "default": "0...1+0.1"}),
             }
         }
     
-    RETURN_TYPES = ("LIST",)
-    RETURN_NAMES = ("List",)
-    OUTPUT_IS_LIST = (True,)
+    RETURN_TYPES = ("INT", "FLOAT", )
+    OUTPUT_IS_LIST = (True,True)
     FUNCTION = "Execute"
     CATEGORY = "Steudio/Utils"
     DESCRIPTION = """
 x...y+z | Generates a sequence of numbers from x to y with a step of z.
 x...y#z | Generates z evenly spaced numbers between x and y.
-x,y,z | Generates a list of x, y, z.
+  x,y,z | Generates a list of x, y, z.
     """
 
-    def Execute(self, mode, any):
-        elements = any.split(',')
+    def Execute(self, gen):
+        elements = gen.split(',')
         result = []
 
         def parse_number(s):
@@ -189,12 +187,7 @@ x,y,z | Generates a list of x, y, z.
             else:
                 result.append(round(parse_number(element), 2))
 
-            if mode == "Integer":
-                result = list(map(int, result))
-            elif mode == "Float":
-                result = list(map(float, [f"{num:.2f}"for num in result if isinstance(num, float)]))
-
-        return result,
+        return (list(map(int, result)), list(map(float, [f"{num:.2f}"for num in result if isinstance(num, float)])), )
 
 
 
@@ -205,12 +198,12 @@ x,y,z | Generates a list of x, y, z.
 NODE_CLASS_MAPPINGS = {
     "Make Size": Make_Size,
     "Seed Shifter": Seed_Shifter,
-    "Range List": Range_List,
+    "Sequence Generator": Sequence_Generator,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
 NODE_DISPLAY_NAME_MAPPINGS = {
     "Make Size": "Make Size",
     "Seed Shifter": "Seed Shifter",
-    "Range List": "Range List",
+    "Sequence Generator": "Sequence Generator",
 }
