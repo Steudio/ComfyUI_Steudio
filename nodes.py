@@ -1,5 +1,5 @@
-from ComfyUI_Steudio.DaC import DaC_Algorithm, DaC_Algorithm_No_Upscale, Divide_Image, Combine_Tiles, Divide_Image_Select, Load_Images_into_List
-from ComfyUI_Steudio.Utils import Make_Size, Seed_Shifter, Sequence_Generator
+from .DaC import DaC_Algorithm, DaC_Algorithm_No_Upscale, Divide_Image, Combine_Tiles, Divide_Image_Select, Load_Images_into_List
+from .Utils import Make_Size, Seed_Shifter, Sequence_Generator
 
 
 NODE_CLASS_MAPPINGS = {
