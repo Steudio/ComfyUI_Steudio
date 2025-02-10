@@ -539,7 +539,7 @@ class Combine_Tiles:
             elif x == 0 and y == 0 and upscaled_width == tile_width:
                 draw.rectangle([x, y, tile_width, tile_height - f_overlap_y], fill=255)
             elif x == 0 and y == upscaled_height - tile_height and upscaled_width == tile_width:
-                draw.rectangle([f_overlap_x, y, tile_width, tile_height], fill=255)
+                draw.rectangle([x, f_overlap_y, tile_width, tile_height], fill=255)
             # 9 12 Detect top or bottom edges
             elif x != 0 and x !=upscaled_width - tile_width and y == 0 and upscaled_height != tile_height and upscaled_width != tile_width:
                 draw.rectangle([f_overlap_x, y, tile_width - f_overlap_x, tile_height - f_overlap_y], fill=255)
