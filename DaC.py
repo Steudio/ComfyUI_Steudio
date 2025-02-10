@@ -118,7 +118,7 @@ while maintaining minimum tile overlap and scale factor constraints.
 Steudio
 """
 
-    def execute(self, image, tile_width, tile_height, overlap, min_scale_factor, tile_order):
+    def execute(self, image, tile_width, tile_height, min_overlap, min_scale_factor, tile_order):
 
         overlap = OVERLAP_DICT.get(min_overlap, 0)  # Default to 0 if the key is not found
         tile_order = TILE_ORDER_DICT.get(tile_order, 0)  # Default to 0 if the key is not found
