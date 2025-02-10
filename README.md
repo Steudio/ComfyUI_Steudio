@@ -167,6 +167,10 @@ git clone https://github.com/Steudio/ComfyUI_Steudio.git
 ```
 
 # Changelog
+`Version 1.2.1` (2025-02-10)<br>
+- No more abnormally large upscales.
+- Given the right conditions, it is now possible to tile the image without upscaling it.
+  
 `Version 1.1.0` (2025-01-05)<br>
 - Nodes now process images as a list instead of a batch, enabling the execution of divide and combine operations in one go.
 - Improved Gaussian blur for blending masks.
