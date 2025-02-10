@@ -237,7 +237,7 @@ Steudio
             # Calculate initial upscaled width based on min_scale_factor
             multiply_factor = math.ceil(min_scale_factor * width / tile_width)
             while True:
-                upscaled_width = width * multiply_factor
+                upscaled_width = tile_width * multiply_factor
                 grid_x = math.ceil(upscaled_width / tile_width)
                 upscaled_width = (tile_width * grid_x) - (overlap_x * (grid_x - 1))
                 upscale_ratio = upscaled_width / width
@@ -250,7 +250,7 @@ Steudio
         else:
             multiply_factor = math.ceil(min_scale_factor * height / tile_height)
             while True:
-                upscaled_height = height * multiply_factor
+                upscaled_height = tile_height * multiply_factor
                 grid_y = math.ceil(upscaled_height / tile_height)
                 upscaled_height = (tile_height * grid_y) - (overlap_y * (grid_y - 1))
                 upscale_ratio = upscaled_height / height
