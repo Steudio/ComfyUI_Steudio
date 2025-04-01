@@ -96,6 +96,204 @@ class Make_Size:
         height = int(height)
            
         return(width, height, )
+    
+class Flux_Size:
+    def __init__(self):
+        pass
+    
+    @classmethod
+    def INPUT_TYPES(s):
+        Resolutions_list = [
+            "1:1 ◻ 512x512 | 0.3",
+            "1:1 ◻ 768x768 | 0.6",
+            "1:1 ◻ 1024x1024 | 1.0",
+            "1:1 ◻ 1152x1152 | 1.3",
+            "5:4 ▭ 640x512 | 0.3",
+            "5:4 ▭ 960x768 | 0.7",
+            "5:4 ▭ 1280x1024 | 1.3",
+            "4:3 ▭ 768x576 | 0.4",
+            "4:3 ▭ 1024x768 | 0.8",
+            "4:3 ▭ 1280x960 | 1.2",
+            "4:3 ▭ 1536x1152 | 1.8",
+            "3:2 ▭ 576x384 | 0.2",
+            "3:2 ▭ 768x512 | 0.4",
+            "3:2 ▭ 960x640 | 0.6",
+            "3:2 ▭ 1152x768 | 0.9",
+            "3:2 ▭ 1344x896 | 1.2",
+            "3:2 ▭ 1536x1024 | 1.6",
+            "16:9 ▭ 1024x576 | 0.6",
+            "16!9 ▭ 1344x768 | 1.0",
+            "16!9 ▭ 1472x832 | 1.2",
+            "16!9 ▭ 1600x896 | 1.4",
+            "2:1 ▭ 768x384 | 0.3",
+            "2:1 ▭ 1024x512 | 0.5",
+            "2:1 ▭ 1280x640 | 0.8",
+            "2:1 ▭ 1536x768 | 1.2",
+            "21:9 ▭ 896x384 | 0.3",
+            "21:9 ▭ 1344x576 | 0.8",
+            "21:9 ▭ 1792x768 | 1.4",
+            "32!9 ▭ 896x256 | 0.2",
+            "32!9 ▭ 1152x320 | 0.4",
+            "32!9 ▭ 1344x384 | 0.5",
+            "32!9 ▭ 1600x448 | 0.7",
+            "32!9 ▭ 1792x512 | 0.9",
+            "32:9 ▭ 2048x576 | 1.2",
+        ]
+
+        return {
+            "required": {
+                "res": (Resolutions_list,),
+                "Orientation": (["▭", "▯"],),
+            }
+        }
+
+    RETURN_TYPES = ("INT", "INT",)
+    RETURN_NAMES = ("width", "height",)
+
+    FUNCTION = "res"
+    CATEGORY = "Steudio/Utils"
+
+    def res(self, res, Orientation):
+        # Updated dictionary mapping resolutions to width and height
+        resolutions = {
+            "1:1 ◻ 512x512 | 0.3": (512, 512),
+            "1:1 ◻ 768x768 | 0.6": (768, 768),
+            "1:1 ◻ 1024x1024 | 1.0": (1024, 1024),
+            "1:1 ◻ 1152x1152 | 1.3": (1152, 1152),
+            "5:4 ▭ 640x512 | 0.3": (640, 512),
+            "5:4 ▭ 960x768 | 0.7": (960, 768),
+            "5:4 ▭ 1280x1024 | 1.3": (1280, 1024),
+            "4:3 ▭ 768x576 | 0.4": (768, 576),
+            "4:3 ▭ 1024x768 | 0.8": (1024, 768),
+            "4:3 ▭ 1280x960 | 1.2": (1280, 960),
+            "4:3 ▭ 1536x1152 | 1.8": (1536, 1152),
+            "3:2 ▭ 576x384 | 0.2": (576, 384),
+            "3:2 ▭ 768x512 | 0.4": (768, 512),
+            "3:2 ▭ 960x640 | 0.6": (960, 640),
+            "3:2 ▭ 1152x768 | 0.9": (1152, 768),
+            "3:2 ▭ 1344x896 | 1.2": (1344, 896),
+            "3:2 ▭ 1536x1024 | 1.6": (1536, 1024),
+            "16:9 ▭ 1024x576 | 0.6": (1024, 576),
+            "16!9 ▭ 1344x768 | 1.0": (1344, 768),
+            "16!9 ▭ 1472x832 | 1.2": (1472, 832),
+            "16!9 ▭ 1600x896 | 1.4": (1600, 896),
+            "2:1 ▭ 768x384 | 0.3": (768, 384),
+            "2:1 ▭ 1024x512 | 0.5": (1024, 512),
+            "2:1 ▭ 1280x640 | 0.8": (1280, 640),
+            "2:1 ▭ 1536x768 | 1.2": (1536, 768),
+            "21:9 ▭ 896x384 | 0.3": (896, 384),
+            "21:9 ▭ 1344x576 | 0.8": (1344, 576),
+            "21:9 ▭ 1792x768 | 1.4": (1792, 768),
+            "32!9 ▭ 896x256 | 0.2": (896, 256),
+            "32!9 ▭ 1152x320 | 0.4": (1152, 320),
+            "32!9 ▭ 1344x384 | 0.5": (1344, 384),
+            "32!9 ▭ 1600x448 | 0.7": (1600, 448),
+            "32!9 ▭ 1792x512 | 0.9": (1792, 512),
+            "32:9 ▭ 2048x576 | 1.2": (2048, 576),
+        }
+
+        # Retrieve width and height from the updated dictionary
+        width, height = resolutions.get(res, (0, 0))  # Default to (0, 0) if resolution not found
+
+        # Adjust for orientation
+        if Orientation == "▯":
+            width, height = height, width
+
+        return int(width), int(height),
+
+class Aspect_Ratio_Size:
+    def __init__(self):
+        pass
+    
+    @classmethod
+    def INPUT_TYPES(cls):
+        Resolutions_list = [
+            "1:1 ◻",
+            "5:4 ▭",
+            "4:3 ▭",
+            "3:2 ▭",
+            "16:9 ▭",
+            "2:1 ▭",
+            "21:9 ▭",
+            "32:9 ▭",
+        ]
+
+        return {
+            "required": {
+                "ratio": (Resolutions_list,),
+                "Orientation": (["▭", "▯"],),
+                "Megapixel": ("FLOAT", {"default": 1.00, "min": 0.10, "max": 3.00, "step": 0.01 }),
+                "Precision": ("FLOAT", {"default": 0.00, "min": 0.30, "max": 1.00, "step": 0.01 }),
+            }
+        }
+
+    RETURN_TYPES = ("INT", "INT", "DATA",)
+    RETURN_NAMES = ("width", "height", "data",)
+    FUNCTION = "calculate_dimensions"
+    CATEGORY = "Steudio/Utils"
+
+    def calculate_dimensions(self, ratio, Orientation, Megapixel, Precision):
+        # Dictionary mapping resolutions to width and height
+        resolutions = {
+            "1:1 ◻": (1, 1),
+            "5:4 ▭": (5, 4),
+            "4:3 ▭": (4, 3),
+            "3:2 ▭": (3, 2),
+            "16:9 ▭": (16, 9),
+            "2:1 ▭": (2, 1),
+            "21:9 ▭": (21, 9),
+            "32:9 ▭": (32, 9),
+        }
+
+        # Retrieve aspect width and height from the resolutions dictionary
+        aspect_width, aspect_height = resolutions.get(ratio, (0, 0))  # Default to (0, 0) if ratio not found
+
+        # Convert megapixels to total pixels
+        total_pixels = int(Megapixel * 1_000_000)
+
+        # Calculate approximate starting dimensions
+        width = int((total_pixels * (aspect_width / aspect_height)) ** 0.5)
+        height = int(width * (aspect_height / aspect_width))
+
+        # Adjust width and height to multiples of 64 while respecting precision
+        found_solution = False
+        while True:
+            # Ensure dimensions are multiples of 64
+            width = (width // 64) * 64
+            height = (height // 64) * 64
+
+            # Check precision
+            if abs((width / height) - (aspect_width / aspect_height)) <= Precision:
+                found_solution = True
+                break
+
+            # Try reducing dimensions
+            if width > 64 and height > 64:
+                if (width / height) > (aspect_width / aspect_height):
+                    width -= 64
+                else:
+                    height -= 64
+            else:
+                # No solution found
+                break
+
+        f_megapixel = "{:,}".format(width * height) 
+        f_precision = (aspect_width / aspect_height) - (width / height)
+
+        # Adjust for orientation
+        if Orientation == "▯":
+            width, height = height, width
+
+        data = {'width': width,
+            'height': height,
+            'Megapixel': f_megapixel,
+            'Precision': f_precision,
+            }
+
+
+
+        return int(width), int(height), data
+
 
 class Seed_Shifter:
     def __init__(self):
@@ -197,6 +395,8 @@ x...y#z | Generates z evenly spaced numbers between x and y.
 # NOTE: names should be globally unique
 NODE_CLASS_MAPPINGS = {
     "Make Size": Make_Size,
+    "Flux Size": Flux_Size,
+    "Aspect Ratio Size": Aspect_Ratio_Size,
     "Seed Shifter": Seed_Shifter,
     "Sequence Generator": Sequence_Generator,
 }
@@ -204,6 +404,8 @@ NODE_CLASS_MAPPINGS = {
 # A dictionary that contains the friendly/humanly readable titles for the nodes
 NODE_DISPLAY_NAME_MAPPINGS = {
     "Make Size": "Make Size",
+    "Flux Size": "Flux Size",
+    "Aspect Ratio Size": "Aspect Ratio Size",
     "Seed Shifter": "Seed Shifter",
     "Sequence Generator": "Sequence Generator",
 }
