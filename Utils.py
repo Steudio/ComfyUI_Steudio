@@ -223,7 +223,7 @@ class Aspect_Ratio_Size:
                 "ratio": (Resolutions_list,),
                 "Orientation": (["▭", "▯"],),
                 "Megapixel": ("FLOAT", {"default": 1.00, "min": 0.10, "max": 3.00, "step": 0.01 }),
-                "Precision": ("FLOAT", {"default": 0.00, "min": 0.30, "max": 1.00, "step": 0.01 }),
+                "Precision": ("FLOAT", {"default": 0.30, "min": 0.00, "max": 1.00, "step": 0.01 }),
             }
         }
 
