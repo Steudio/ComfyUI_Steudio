@@ -97,7 +97,7 @@ Workflow > Browse Templates > comfyui_steudio
 Coming Soon!
 
 :100: cropped comparison.<br>
-<a href="https://imgsli.com/Mzc2Mjk1">
+<a href="https://imgsli.com/Mzc2MzA3">
     <img src="Images/DaC_Side-by-side.png" alt="Full image" style="width: 100%;">
 </a><br>
 
