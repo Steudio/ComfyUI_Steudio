@@ -1,252 +1,109 @@
-# Make_size utilize code from Comfyroll Studio custom nodes by RockOfFire and Akatsuzi    https://github.com/Suzie1/ComfyUI_Comfyroll_CustomNodes
-# Range_List utilize code from Cubiq    https://github.com/cubiq/ComfyUI_essentials
-# Modified by Steudio
+# Ratio_to_Size utilize code from Comfyroll Studio custom nodes by RockOfFire and Akatsuzi    https://github.com/Suzie1/ComfyUI_Comfyroll_CustomNodes
+# AnyType code from Pythongosssss https://github.com/pythongosssss/
+# Sequence_Generator utilize code from Cubiq    https://github.com/cubiq/ComfyUI_essentials
+# Original LoadImagesFromFolderKJ from https://github.com/kijai/ComfyUI-KJNodes
+# Original display_any code from https://github.com/rgthree/rgthree-comfy
+# Created by Steudio
 
-class Make_Size:
+import comfy.samplers
+import math
+import os
+import torch
+import math
+from PIL import Image, ImageOps
+import numpy as np
+
+
+class AnyType(str):
+    def __ne__(self, __value: object) -> bool:
+        return False
+
+_any_ = AnyType("*")
+
+RATIO = {
+    "1:1 ◻": (1, 1),
+    "5:4 ▭": (5, 4),
+    "4:3 ▭": (4, 3),
+    "3:2 ▭": (3, 2),
+    "16:9 ▭": (16, 9),
+    "2:1 ▭": (2, 1),
+    "21:9 ▭": (21, 9),
+    "32:9 ▭": (32, 9),
+    "": (1, 1),
+    "4:5 ▯": (4, 5),
+    "3:4 ▯": (3, 4),
+    "2:3 ▯": (2, 3),
+    "9:16 ▯": (9, 16),
+    "1:2 ▯": (1, 2),
+    "9:21 ▯": (9, 21),
+    "9:32 ▯": (9, 32),
+}
+
+class Ratio_Calculator:
     def __init__(self):
         pass
     
     @classmethod
-    def INPUT_TYPES(s):
-    
-        Resolutions_list = ["custom",
-                         "SD1.5 - 1:1 ◻ 512x512",
-                         "SD1.5 - 2:3 ▯ 512x768",
-                         "SD1.5 - 3:4 ▯ 512x682",
-                         "SD1.5 - 3:2 ▭ 768x512",
-                         "SD1.5 - 4:3 ▭ 682x512",
-                         "SD1.5 - 16:9 ▭ 910x512",
-                         "SD1.5 - 1.85:1 ▭ 952x512",
-                         "SD1.5 - 2:1 ▭ 1024x512",
-                         "SDXL - 1:1 ◻ 1024x1024",
-                         "SDXL - 3:4 ▯ 896x1152",
-                         "SDXL - 5:8 ▯ 832x1216",
-                         "SDXL - 9:16 ▯ 768x1344",
-                         "SDXL - 9:21 ▯ 640x1536",
-                         "SDXL - 4:3 ▭ 1152x896",
-                         "SDXL - 3:2 ▭ 1216x832",
-                         "SDXL - 16:9 ▭ 1344x768",
-                         "SDXL ! 2:1 ▭ 1408x704",
-                         "SDXL - 21:9 ▭ 1536x640",
-                         "SDXL ! 32:9 ▭ 1792x512"]
-               
+    def INPUT_TYPES(cls):  
         return {
             "required": {
-                "width": ("INT", {"default": 1024, "min": 64, "max": 8192}),
-                "height": ("INT", {"default": 1024, "min": 64, "max": 8192}),
-                "resolutions": (Resolutions_list,),
-                "swap_dimensions": (["Off", "On"],),
+                "image": ("IMAGE",),
             }
         }
-    RETURN_TYPES = ("INT", "INT", )
-    RETURN_NAMES = ("width", "height", )
     
-
-    FUNCTION = "Resolutions"
+    RETURN_TYPES = (_any_,)
+    RETURN_NAMES = ("ratio",)
+    FUNCTION = "calc"
+    OUTPUT_NODE = True
     CATEGORY = "Steudio/Utils"
 
-    def Resolutions(self, width, height, resolutions, swap_dimensions):
+    def calc(self, image):      
+
+        # Get dimensions of the image
+        _, height, width, _ = image.shape
+
+        # Find the greatest common divisor (GCD)
+        gcd = math.gcd(width, height)
         
-        # SD1.5
-        if resolutions == "SD1.5 - 1:1 ◻ 512x512":
-            width, height = 512, 512
-        elif resolutions == "SD1.5 - 2:3 ▯ 512x768":
-            width, height = 512, 768
-        elif resolutions == "SD1.5 - 16:9 ▭ 910x512":
-            width, height = 910, 512
-        elif resolutions == "SD1.5 - 3:4 ▯ 512x682":
-            width, height = 512, 682
-        elif resolutions == "SD1.5 - 3:2 ▭ 768x512":
-            width, height = 768, 512    
-        elif resolutions == "SD1.5 - 4:3 ▭ 682x512":
-            width, height = 682, 512
-        elif resolutions == "SD1.5 - 1.85:1 ▭ 952x512":            
-            width, height = 952, 512
-        elif resolutions == "SD1.5 - 2:1 ▭ 1024x512":
-            width, height = 1024, 512
-        elif resolutions == "SD1.5 - 2.39:1 ▭ 1224x512":
-            width, height = 1224, 512 
-        # SDXL   
-        if resolutions == "SDXL - 1:1 ◻ 1024x1024":
-            width, height = 1024, 1024
-        elif resolutions == "SDXL - 3:4 ▯ 896x1152":
-            width, height = 896, 1152
-        elif resolutions == "SDXL - 5:8 ▯ 832x1216":
-            width, height = 832, 1216
-        elif resolutions == "SDXL - 9:16 ▯ 768x1344":
-            width, height = 768, 1344
-        elif resolutions == "SDXL - 9:21 ▯ 640x1536":
-            width, height = 640, 1536
-        elif resolutions == "SDXL - 4:3 ▭ 1152x896":
-            width, height = 1152, 896
-        elif resolutions == "SDXL - 3:2 ▭ 1216x832":
-            width, height = 1216, 832
-        elif resolutions == "SDXL - 16:9 ▭ 1344x768":
-            width, height = 1344, 768
-        elif resolutions == "SDXL ! 2:1 ▭ 1408x704":
-            width, height = 1408, 704
-        elif resolutions == "SDXL - 21:9 ▭ 1536x640":
-            width, height = 1536, 640
-        elif resolutions == "SDXL ! 32:9 ▭ 1792x512":
-            width, height = 1792, 512                    
-        if swap_dimensions == "On":
-            width, height = height, width
-        
-        width = int(width)
-        height = int(height)
-           
-        return(width, height, )
-    
-class Flux_Size:
-    def __init__(self):
-        pass
-    
-    @classmethod
-    def INPUT_TYPES(s):
-        Resolutions_list = [
-            "1:1 ◻ 512x512 | 0.3",
-            "1:1 ◻ 768x768 | 0.6",
-            "1:1 ◻ 1024x1024 | 1.0",
-            "1:1 ◻ 1152x1152 | 1.3",
-            "5:4 ▭ 640x512 | 0.3",
-            "5:4 ▭ 960x768 | 0.7",
-            "5:4 ▭ 1280x1024 | 1.3",
-            "4:3 ▭ 768x576 | 0.4",
-            "4:3 ▭ 1024x768 | 0.8",
-            "4:3 ▭ 1280x960 | 1.2",
-            "4:3 ▭ 1536x1152 | 1.8",
-            "3:2 ▭ 576x384 | 0.2",
-            "3:2 ▭ 768x512 | 0.4",
-            "3:2 ▭ 960x640 | 0.6",
-            "3:2 ▭ 1152x768 | 0.9",
-            "3:2 ▭ 1344x896 | 1.2",
-            "3:2 ▭ 1536x1024 | 1.6",
-            "16:9 ▭ 1024x576 | 0.6",
-            "16!9 ▭ 1344x768 | 1.0",
-            "16!9 ▭ 1472x832 | 1.2",
-            "16!9 ▭ 1600x896 | 1.4",
-            "2:1 ▭ 768x384 | 0.3",
-            "2:1 ▭ 1024x512 | 0.5",
-            "2:1 ▭ 1280x640 | 0.8",
-            "2:1 ▭ 1536x768 | 1.2",
-            "21:9 ▭ 896x384 | 0.3",
-            "21:9 ▭ 1344x576 | 0.8",
-            "21:9 ▭ 1792x768 | 1.4",
-            "32!9 ▭ 896x256 | 0.2",
-            "32!9 ▭ 1152x320 | 0.4",
-            "32!9 ▭ 1344x384 | 0.5",
-            "32!9 ▭ 1600x448 | 0.7",
-            "32!9 ▭ 1792x512 | 0.9",
-            "32:9 ▭ 2048x576 | 1.2",
-        ]
+        # Simplify the dimensions
+        simplified_width = width // gcd
+        simplified_height = height // gcd
 
-        return {
-            "required": {
-                "res": (Resolutions_list,),
-                "Orientation": (["▭", "▯"],),
-            }
-        }
+        # Find the closest ratio
+        closest_ratio = None
+        min_difference = float('inf')
+        for name, (rw, rh) in RATIO.items():
+            difference = abs(simplified_width / simplified_height - rw / rh)
+            if difference < min_difference:
+                min_difference = difference
+                closest_ratio = name
 
-    RETURN_TYPES = ("INT", "INT",)
-    RETURN_NAMES = ("width", "height",)
+        # return closest_ratio,
+        return {"ui": {"text": closest_ratio}, "result": (closest_ratio,)}
 
-    FUNCTION = "res"
-    CATEGORY = "Steudio/Utils"
-
-    def res(self, res, Orientation):
-        # Updated dictionary mapping resolutions to width and height
-        resolutions = {
-            "1:1 ◻ 512x512 | 0.3": (512, 512),
-            "1:1 ◻ 768x768 | 0.6": (768, 768),
-            "1:1 ◻ 1024x1024 | 1.0": (1024, 1024),
-            "1:1 ◻ 1152x1152 | 1.3": (1152, 1152),
-            "5:4 ▭ 640x512 | 0.3": (640, 512),
-            "5:4 ▭ 960x768 | 0.7": (960, 768),
-            "5:4 ▭ 1280x1024 | 1.3": (1280, 1024),
-            "4:3 ▭ 768x576 | 0.4": (768, 576),
-            "4:3 ▭ 1024x768 | 0.8": (1024, 768),
-            "4:3 ▭ 1280x960 | 1.2": (1280, 960),
-            "4:3 ▭ 1536x1152 | 1.8": (1536, 1152),
-            "3:2 ▭ 576x384 | 0.2": (576, 384),
-            "3:2 ▭ 768x512 | 0.4": (768, 512),
-            "3:2 ▭ 960x640 | 0.6": (960, 640),
-            "3:2 ▭ 1152x768 | 0.9": (1152, 768),
-            "3:2 ▭ 1344x896 | 1.2": (1344, 896),
-            "3:2 ▭ 1536x1024 | 1.6": (1536, 1024),
-            "16:9 ▭ 1024x576 | 0.6": (1024, 576),
-            "16!9 ▭ 1344x768 | 1.0": (1344, 768),
-            "16!9 ▭ 1472x832 | 1.2": (1472, 832),
-            "16!9 ▭ 1600x896 | 1.4": (1600, 896),
-            "2:1 ▭ 768x384 | 0.3": (768, 384),
-            "2:1 ▭ 1024x512 | 0.5": (1024, 512),
-            "2:1 ▭ 1280x640 | 0.8": (1280, 640),
-            "2:1 ▭ 1536x768 | 1.2": (1536, 768),
-            "21:9 ▭ 896x384 | 0.3": (896, 384),
-            "21:9 ▭ 1344x576 | 0.8": (1344, 576),
-            "21:9 ▭ 1792x768 | 1.4": (1792, 768),
-            "32!9 ▭ 896x256 | 0.2": (896, 256),
-            "32!9 ▭ 1152x320 | 0.4": (1152, 320),
-            "32!9 ▭ 1344x384 | 0.5": (1344, 384),
-            "32!9 ▭ 1600x448 | 0.7": (1600, 448),
-            "32!9 ▭ 1792x512 | 0.9": (1792, 512),
-            "32:9 ▭ 2048x576 | 1.2": (2048, 576),
-        }
-
-        # Retrieve width and height from the updated dictionary
-        width, height = resolutions.get(res, (0, 0))  # Default to (0, 0) if resolution not found
-
-        # Adjust for orientation
-        if Orientation == "▯":
-            width, height = height, width
-
-        return int(width), int(height),
-
-class Aspect_Ratio_Size:
+class Ratio_to_Size:
     def __init__(self):
         pass
     
     @classmethod
     def INPUT_TYPES(cls):
-        Resolutions_list = [
-            "1:1 ◻",
-            "5:4 ▭",
-            "4:3 ▭",
-            "3:2 ▭",
-            "16:9 ▭",
-            "2:1 ▭",
-            "21:9 ▭",
-            "32:9 ▭",
-        ]
-
         return {
             "required": {
-                "ratio": (Resolutions_list,),
-                "Orientation": (["▭", "▯"],),
-                "Megapixel": ("FLOAT", {"default": 1.00, "min": 0.10, "max": 3.00, "step": 0.01 }),
+                "ratio": (list(RATIO.keys()),),
+                "Megapixel": ("FLOAT", {"default": 1.05, "min": 0.10, "max": 3.00, "step": 0.01 }),
                 "Precision": ("FLOAT", {"default": 0.30, "min": 0.00, "max": 1.00, "step": 0.01 }),
             }
         }
 
-    RETURN_TYPES = ("INT", "INT", "DATA",)
-    RETURN_NAMES = ("width", "height", "data",)
+    RETURN_TYPES = ("INT", "INT", "UI",)
+    RETURN_NAMES = ("width", "height", "ui",)
     FUNCTION = "calculate_dimensions"
     CATEGORY = "Steudio/Utils"
 
-    def calculate_dimensions(self, ratio, Orientation, Megapixel, Precision):
-        # Dictionary mapping resolutions to width and height
-        resolutions = {
-            "1:1 ◻": (1, 1),
-            "5:4 ▭": (5, 4),
-            "4:3 ▭": (4, 3),
-            "3:2 ▭": (3, 2),
-            "16:9 ▭": (16, 9),
-            "2:1 ▭": (2, 1),
-            "21:9 ▭": (21, 9),
-            "32:9 ▭": (32, 9),
-        }
+    def calculate_dimensions(self, ratio, Megapixel, Precision):
 
         # Retrieve aspect width and height from the resolutions dictionary
-        aspect_width, aspect_height = resolutions.get(ratio, (0, 0))  # Default to (0, 0) if ratio not found
+        aspect_width, aspect_height = RATIO.get(ratio, (1, 1))  # Default to (1, 1) if ratio not found
 
         # Convert megapixels to total pixels
         total_pixels = int(Megapixel * 1_000_000)
@@ -256,7 +113,6 @@ class Aspect_Ratio_Size:
         height = int(width * (aspect_height / aspect_width))
 
         # Adjust width and height to multiples of 64 while respecting precision
-        found_solution = False
         while True:
             # Ensure dimensions are multiples of 64
             width = (width // 64) * 64
@@ -264,7 +120,6 @@ class Aspect_Ratio_Size:
 
             # Check precision
             if abs((width / height) - (aspect_width / aspect_height)) <= Precision:
-                found_solution = True
                 break
 
             # Try reducing dimensions
@@ -274,25 +129,15 @@ class Aspect_Ratio_Size:
                 else:
                     height -= 64
             else:
-                # No solution found
                 break
 
         f_megapixel = "{:,}".format(width * height) 
-        f_precision = (aspect_width / aspect_height) - (width / height)
+        f_precision = round((aspect_width / aspect_height) - (width / height), 2)
 
-        # Adjust for orientation
-        if Orientation == "▯":
-            width, height = height, width
-
-        data = {'width': width,
-            'height': height,
-            'Megapixel': f_megapixel,
-            'Precision': f_precision,
-            }
+        ui = f"Ratio: {ratio}\nWidth: {width}\nHeight: {height}\nMegapixel: {f_megapixel}\nPrecision: {f_precision}\n"
 
 
-
-        return int(width), int(height), data
+        return int(width), int(height), ui
 
 
 class Seed_Shifter:
@@ -303,7 +148,7 @@ class Seed_Shifter:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "seed": ("INT", {"forceInput":True}),
+                "seed_": ("INT", { "default": 0, "min": 0, "max": 0xffffffffffffffff, "step": 1 }),
                 "seed_shifter": ("INT", {"default": 0, "min": 0}),
                 "batch": ("INT", {"default": 1, "min": 1}),
             }
@@ -318,8 +163,8 @@ class Seed_Shifter:
 A simple and effective way to generate a “batch” of images with reproducible seed.
 Steudio
 """
-    def shift_seeds(self, seed, seed_shifter, batch):
-        seeds = [(seed + seed_shifter + i) for i in range(batch)]
+    def shift_seeds(self, seed_, seed_shifter, batch):
+        seeds = [(seed_ + seed_shifter + i) for i in range(batch)]
         return seeds,
 
 class Sequence_Generator:
@@ -336,6 +181,7 @@ class Sequence_Generator:
     
     RETURN_TYPES = ("INT", "FLOAT", )
     OUTPUT_IS_LIST = (True,True)
+    OUTPUT_NODE = True
     FUNCTION = "Execute"
     CATEGORY = "Steudio/Utils"
     DESCRIPTION = """
@@ -385,27 +231,139 @@ x...y#z | Generates z evenly spaced numbers between x and y.
             else:
                 result.append(round(parse_number(element), 2))
 
-        return (list(map(int, result)), list(map(float, [f"{num:.2f}"for num in result if isinstance(num, float)])), )
+        seq_int = list(map(int, result))
+        seq_float = list(map(float, [f"{num:.2f}"for num in result if isinstance(num, float)]))
+        seq_int_float = f"{len(seq_int)} INT: {seq_int}\n{len(seq_float)} FLOAT: {seq_float}"
+
+        return {"ui": {"text": (seq_int_float)}, "result": (seq_int, seq_float)}
+
+
+class Simple_Config:
+    def __init__(self):
+        pass
+    
+    @classmethod
+    def INPUT_TYPES(s):               
+        return {
+            "required": {
+                "steps": ("INT", {"default": 24, "min": 1, "max": 99}),
+                "sampler": (comfy.samplers.KSampler.SAMPLERS,),
+                "scheduler": (comfy.samplers.KSampler.SCHEDULERS,),
+            }
+        }
+    RETURN_TYPES = ("INT",comfy.samplers.KSampler.SAMPLERS, comfy.samplers.KSampler.SCHEDULERS )
+    RETURN_NAMES = ("STEPS", "SAMPLER", "SCHEDULER")
+    
+
+    FUNCTION = "config"
+    CATEGORY = "Steudio/Utils"
+
+    def config(self, steps, sampler, scheduler,):           
+        return(steps, sampler, scheduler,)
+    
+
+
+# Original display_any code from https://github.com/rgthree/rgthree-comfy
+class Display_UI:
+    @classmethod
+    def INPUT_TYPES(cls):  # pylint: disable=invalid-name, missing-function-docstring
+        return {
+            "required": {
+                "ui": (_any_, {}),
+            },
+        }
+
+    RETURN_TYPES = ()
+    FUNCTION = "main"
+    OUTPUT_NODE = True
+    CATEGORY = "Steudio/Utils"
+
+    def main(self, ui=None):
+        value = 'None'
+        if isinstance(ui, str):
+            value = ui
+        elif isinstance(ui, (int, float, bool)):
+            value = str(ui)
+
+        return {"ui": {"text": (value,)}}
 
 
 
+# Original LoadImagesFromFolderKJ code from https://github.com/kijai/ComfyUI-KJNodes
+class Load_Images_into_List:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "directory": ("STRING", {"default": ""}),
+            },
+        }
 
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("image",)
+    OUTPUT_IS_LIST = (True,)
+    FUNCTION = "Load_Images_into_List"
+    CATEGORY = "Steudio/Utils"
+
+    def Load_Images_into_List(self, directory):
+        if not os.path.isdir(directory):
+            raise FileNotFoundError(f"Directory '{directory}' cannot be found.")
+        
+        # List all files in the directory
+        dir_files = os.listdir(directory)
+        if len(dir_files) == 0:
+            raise FileNotFoundError(f"No files in directory '{directory}'.")
+
+        # Filter files by extension
+        valid_extensions = ['.jpg', '.jpeg', '.png', '.webp']
+        dir_files = [f for f in dir_files if any(f.lower().endswith(ext) for ext in valid_extensions)]
+
+        if not dir_files:
+            raise FileNotFoundError(f"No valid image files found in directory '{directory}'.")
+
+        dir_files = sorted(dir_files)
+        dir_files = [os.path.join(directory, x) for x in dir_files]
+
+        images = []
+
+        for image_path in dir_files:
+            try:
+                i = Image.open(image_path)
+                i = ImageOps.exif_transpose(i)
+                image = i.convert("RGB")
+                image = np.array(image).astype(np.float32) / 255.0
+                image_tensor = torch.from_numpy(image)[None,]
+                images.append(image_tensor)
+            except Exception as e:
+                print(f"Error processing image {image_path}: {e}")
+                continue
+
+        if not images:
+            raise FileNotFoundError(f"No images could be loaded from directory '{directory}'.")
+
+        # Concatenate images into a single tensor
+        images = torch.cat(images, dim=0)
+        return ([images[i].unsqueeze(0) for i in range(images.shape[0])],)
 
 # A dictionary that contains all nodes you want to export with their names
 # NOTE: names should be globally unique
 NODE_CLASS_MAPPINGS = {
-    "Make Size": Make_Size,
-    "Flux Size": Flux_Size,
-    "Aspect Ratio Size": Aspect_Ratio_Size,
+    "Ratio Calculator": Ratio_Calculator,
+    "Ratio to Size": Ratio_to_Size,
     "Seed Shifter": Seed_Shifter,
     "Sequence Generator": Sequence_Generator,
+    "Simple Config": Simple_Config,
+    "Load Images into List": Load_Images_into_List,
+    "Display UI": Display_UI,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "Make Size": "Make Size",
-    "Flux Size": "Flux Size",
-    "Aspect Ratio Size": "Aspect Ratio Size",
+    "Ratio Calculator": "Ratio Calculator",
+    "Ratio to Size": "Ratio to Size",
     "Seed Shifter": "Seed Shifter",
     "Sequence Generator": "Sequence Generator",
+    "Simple Config": "Simple Config",
+    "Load Images into List": "Load Images into List",
+    "Display UI": "Display UI",
 }

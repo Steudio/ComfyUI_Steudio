@@ -4,8 +4,13 @@
 
 </center>
 
-# Divide and Conquer Node Suite (UPDATED :fire:)
-Introducing a suite of nodes designed to enhance image upscaling. It calculates the optimal upscale resolution and seamlessly divides the image into tiles, ready for individual processing using your preferred workflow. After processing, the tiles are seamlessly merged into a larger image, offering sharper and more detailed visuals.The suite features three main nodes, with additional variants available for added flexibility.
+# Divide and Conquer Node Suite 2.0.0
+
+:pushpin: If you're updating from version 1.x.x, make sure to replace the old nodes with the new ones in your workflow to avoid potential errors.
+
+# Intro
+
+A suite of nodes designed to enhance image upscaling. It calculates the optimal upscale resolution and divides the image into tiles, ready for individual processing using your preferred workflow. After processing, the tiles are seamlessly merged into a larger image, offering sharper and more detailed visuals.
 
 <img src="Images/DaC_Suite.png" alt="Node" style="width: 100%;">
 
@@ -17,140 +22,90 @@ Taking into account tile dimensions, tile overlap, and the minimum scale factor,
 ### Inputs / Outputs
 **`::image`**:
 The image you want to upscale.<br>
-**`::upscale_model`**:
+**`::upscale_model`(optional)**:
 To use with Comfy Core node **UpscaleModelLoader**.<br>
 **`IMAGE::`**:
 Optimized image dimensions to connect to **Divide Image and Select Tile**.<br>
 **`dac_data:`**:
 Data to pass along to following nodes: **Divide Image and Select Tile** and **Combine Tiles**.<br>
+**`ui:`**
+Image processing algorithm summary.<br>
 
 ### Parameters
 
-**`Scaling_method`**: The image will go through a secondary process to meet the optimal upscaled dimensions. *The default value is lanczos.*<br>
+
 **`tile_width`**: This parameter specifies the width of each tile that the image will be divided into.*The default value is 1024 pixels.*<br>
 **`tile_height`**: This parameter specifies the height of each tile that the image will be divided into.The default value is 1024 pixels.<br>
 **`min_overlap`**: This parameter specifies the minimum amount of overlap between adjacent tiles to help blend the tiles seamlessly when they are combined back together. *The default value is '1/32 Tile', and it can range from "None" to "1/2 tile".*<br>
-**`min_scale_factor`**: This parameter determines the minimal scale factor. The effective scale factor will be determined by the tile dimensions and tile overlap. *The default value is 3, and it can range from 1.01 to 8.*<br>
+**`min_scale_factor`**: This parameter determines the minimal scale factor. The effective scale factor will be determined by the tile dimensions and tile overlap. *The default value is 3, and it can range from 1.0 to 8.0*<br>
 **`tile_order`**: This parameter specifies the order in which the tiles are processed. It can be either 'linear' or 'spiral'. 'Linear' processes the tiles in a row-by-row manner, while 'spiral' processes them in an outward clockwise spiral pattern ending at the center. *The default value is "spiral".*<br>
 <img src="Images/Order_Spiral.png" alt="Spiral" style="width: 25%;">
-<img src="Images/Order_Linear.png" alt="Linear" style="width: 25%;">
+<img src="Images/Order_Linear.png" alt="Linear" style="width: 25%;"><br>
+**`Scaling_method`** The image will go through a process to meet the optimal upscaled dimensions. *The default value is lanczos.*<br>
+**`use_upscale_with_model`(optional)**: True/false switch to enable the feature.
+Bypassed if `::upscale_model` is not connected. *The default value is true.*<br>
 
 ## 2. Divide Image and Select Tile | Node
 Taking into account tile dimensions, tile overlap, and final image dimensions, the node calculates coordinates and divides the image into tiles.
 
 <img src="Images/DaC_Divide.png" alt="Node" style="width: 50%;">
 
-**`::image`**:
+### Inputs / Outputs
+**`::image`**
 The image you want to upscale.<br>
-**`::dac_data`**:
-Connect from dac_data "Divide and Conquer" node.<br>
+**`::dac_data`**
+Connect from the dac_data output of the "Divide and Conquer Algorithm" node.<br>
+**`TILE(S)::`**
+All tiles (0) or specific tile (#) to path through (#).<br>
+**`ui::`**
+Matrix visualization.<br>
+
+### Parameters
 **`position`**:
-(OPTIONAL) Select the tile to process (or connect a ComfyCore Primitive node to use in conjunction with Queue Instant).<br>
-**`SELECTED TILES::`**:
-(OPTIONAL) The tile to be processed next.<br>
-**`ALL TILES::`**:
-All the tiles.<br>
+Select the tile(s) to path through. Position (0) indicates all the tiles, while Position (#) specifies an individual tile.<br>
 
 
 ## 3. Combine Tiles | Node
 Combines the processed tiles back into a single image, applying a **Gaussian blur mask** on the overlapping pixels to ensure smooth transitions between the overlapping tiles.<br>
 <img src="Images/DaC_Combine.png" alt="Node" style="width: 50%;">
 
-**`::image`**:
+### Inputs / Outputs
+
+**`::images`**
 The tiles you want to combine into one upscaled image.<br>
-**`::dac_data`**:
-Must be connected to dac_data from "Divide and Conquer" node.<br>
-**`IMAGE::`**:
+**`::dac_data`**
+Connect from the dac_data output of the "Divide and Conquer Algorithm" node.<br>
+**`image::`**
 The combined image, made of multiple tiles.<br>
-
-
-## Terminal
-Useful information is available in the terminal window:
-```
-Divide and Conquer algorithm:
-Original Image Size: 1024x1024
-Upscaled Image Size: 3008x3008
-Grid: 3x3
-overlap_x: 32
-overlap_y: 32
-effective_upscale: 2.94
-```
-```
-Divide and Conquer matrix:
-(0,0) (992,0) (1984,0)
-(0,992) (992,992) (1984,992)
-(0,1984) (992,1984) (1984,1984)
-```
+**`ui::`**
+Matrix visualization.<br>
 
 ## Workflow example
-Download the following workflow from
-[here](Examples/Workflow/Divide_and_Conquer_Workflow_Example_1.1.0.json)
-or 
-drag and drop the workflow image into ComfyUI.
+Get the workflow directly from ComfyUI menu:<br>
+Workflow > Browse Templates > comfyui_steudio
 
-<img src="Examples\Workflow\Divide_and_Conquer_Workflow_Example_1.1.0.png" alt="Workflow" style="width: 100%;">
+<img src="Images/DaC_Workflow.png" alt="Workflow" style="width: 100%;">
 
 :grey_exclamation: This workflow uses the following optional nodes:<br>
 [Set/Get](https://github.com/kijai/ComfyUI-KJNodes) | 
-[Color Match](https://github.com/kijai/ComfyUI-KJNodes) | 
 [Image Comparer](https://github.com/rgthree/rgthree-comfy) | 
-[Display Any](https://github.com/cubiq/ComfyUI_essentials) |
-[ComfyUI-Florence2](https://github.com/kijai/ComfyUI-Florence2)
+[Fast Groups Bypasser](https://github.com/rgthree/rgthree-comfy) |
+[ComfyUI-Florence2](https://github.com/kijai/ComfyUI-Florence2) |
+[TeaCache](https://github.com/welltop-cn/ComfyUI-TeaCache)
 
-## How to use this workflow
-:bangbang: With the release of version 1.1.0, some parts of the tutorial may no longer work and will be updated accordingly as soon as possible.
+## Video Tutorial
+Coming Soon!
 
-<a href="https://youtu.be/gR-E_92vu0Q">
-    <img src="Images/Thumbnail_YT.png" alt="Youtube" style="width: 50%;">
-</a> <br>
-<details><summary>ALGORITHM</summary>
-:one: Load your image.<br>
+:100: cropped comparison.<br>
+<a href="https://imgsli.com/Mzc2Mjk1">
+    <img src="Images/DaC_Side-by-side.png" alt="Full image" style="width: 100%;">
+</a><br>
 
-:two: Select your prefered upscale [model](https://openmodeldb.info).<br>
-:three: Choose your paramaters.<br>
+[Full image with more details generated](https://imgsli.com/Mzc2MzA3)<br>The image has been upscaled 2×, three times.
 
-<img src="Images\Group_ALGORITHM.png" alt="Workflow" style="width: 100%;">
-</details>
-<details><summary>DIVIDE</summary>
-:four: Reset value to "0". <br>
-:five: Change control_after_generate to "increment".
+[Full image with less details generated ](https://imgsli.com/Mzc2OTMx)<br>The image has been upscaled 2×, three times.
 
 
-<img src="Images\Group_DIVIDE.png" alt="Workflow" style="width: 100%;">
-</details>
-<details><summary>CONQUER</summary>
-After the image is divided into tiles, it is a "simple" img2img process.
-
-:grey_exclamation: While any models will work, this example is using [Flux.1-dev](https://huggingface.co/black-forest-labs/FLUX.1-dev) and [Flux.1-dev-Controlnet-Upscaler](https://huggingface.co/jasperai/Flux.1-dev-Controlnet-Upscaler).
-
-Prompt is generate per tile using [ComfyUI-Florence2](https://github.com/kijai/ComfyUI-Florence2).
-
-:six: Each tile must be saved into an **empty folder**.
-
-
-<img src="Images\Group_CONQUER.png" alt="Workflow" style="width: 100%;">
-
-:exclamation: Ensure that only COMBINE group is muted (Set Group Nodes to Never)
-
-:exclamation: Change Queue to Queue (Instant) and click Queue (Instant) to start the process.<br>
-<img src="Images\Menu_Queue_Instant.png" alt="Workflow" style="width: 50%;"><br>
-:exclamation: While not being the most elegant solution, it is working really well to stop generating after the last tile has been processed successfully. Just close the pop-up window.<br>
-<img src="Images\Menu_Error.png" alt="Workflow" style="width: 50%;"><br>
-</details>
-
-<details><summary>COMBINE</summary>
-:exclamation: Change Queue (Instant) to Queue<br>
-<img src="Images\Menu_Queue.png" alt="Workflow" style="width: 50%;"><br>
-:exclamation:Ensure that only DIVIDE and CONQUER groups are muted (Set Group Nodes to Never)<br>
-:seven: Use the same folder as in :six:<br>
-
-A load Images from folder node like [KJnodes LoadImagesFromFolderKJ](https://github.com/kijai/ComfyUI-KJNodes) is required to load the Images to **Combine Tiles** node for processing.<br>
-:bowtie: Enjoy your masterpiece.<br>
-<img src="Images\Group_COMBINE.png" alt="Workflow" style="width: 100%;">
-</details>
-
-:100: cropped comparison:
-<img src="Images/DaC_Side-by-side.png" alt="Workflow" style="width: 100%;">
 
 ## TIPS
 - General upscaling guidelines do apply, but the **Divide and Conquer Node Suite** offers better control per tile, enabling higher detail transfer.
@@ -161,12 +116,12 @@ A load Images from folder node like [KJnodes LoadImagesFromFolderKJ](https://git
 # Installation
 Install via ComfyUI-Manager or Clone this repo into `custom_modules`:
 
-```
-cd ComfyUI/custom_nodes
-git clone https://github.com/Steudio/ComfyUI_Steudio.git
-```
-
 # Changelog
+`Version 2.0.0` (2025-05-04)<br>
+- Improved user experience.
+- Scaling using model is now optional.
+- Can generate all tiles or a single tile without fiddling with the links.
+
 `Version 1.2.1` (2025-02-10)<br>
 - No more abnormally large upscales.
 - Given the right conditions, it is now possible to tile the image without upscaling it.
@@ -179,11 +134,13 @@ git clone https://github.com/Steudio/ComfyUI_Steudio.git
 `Version 1.0.0` (2024-12-01) Initial public release.
 
 # Acknowledgements
-This repository uses some code from:<br>
-[ComfyUI](https://github.com/comfyanonymous/ComfyUI/) | [Comfyroll Studio](https://github.com/Suzie1/ComfyUI_Comfyroll_CustomNodes) | [SimpleTiles](https://github.com/kinfolk0117/ComfyUI_SimpleTiles) | [KJNodes](https://github.com/kijai/ComfyUI-KJNodes) | <br>
+This repository utilizes code from:<br>
+[ComfyUI](https://github.com/comfyanonymous/ComfyUI/) | [Comfyroll Studio](https://github.com/Suzie1/ComfyUI_Comfyroll_CustomNodes) | [SimpleTiles](https://github.com/kinfolk0117/ComfyUI_SimpleTiles) | [KJNodes](https://github.com/kijai/ComfyUI-KJNodes) | [RGThree](https://github.com/rgthree/rgthree-comfy) | [Cubiq](https://github.com/cubiq/ComfyUI_essentials) | [Pythongosssss](https://github.com/pythongosssss/)<br>
 
 # License
 GNU GENERAL PUBLIC LICENSE Version 3, see [LICENSE](LICENSE)
 
 # Thank you
 Copyright (c) 2025, Steudio - https://github.com/steudio
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/steudio)
