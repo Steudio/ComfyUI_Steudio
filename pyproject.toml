@@ -12,4 +12,4 @@ Repository = "https://github.com/Steudio/ComfyUI_Steudio"
 [tool.comfy]
 PublisherId = "steudio"
 DisplayName = "ComfyUI_Steudio"
-Icon = "https://github.com/Steudio/ComfyUI_Steudio/blob/main/Images/Steudio_Logo_Circle.png" # SVG, PNG, JPG or GIF (MAX. 800x400px)
+Icon = "https://raw.githubusercontent.com/Steudio/ComfyUI_Steudio/main/Images/Steudio_Logo_Circle.png" # SVG, PNG, JPG or GIF (MAX. 800x400px)
