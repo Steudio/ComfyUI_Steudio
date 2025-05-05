@@ -110,7 +110,6 @@ Coming Soon!
 ## TIPS
 - General upscaling guidelines do apply, but the **Divide and Conquer Node Suite** offers better control per tile, enabling higher detail transfer.
 - Instead of generating the entire set of tiles, a single tile can be generated as a test sample to verify your img2img parameters.
-- Ensure that the input folder only contains the tiles you intend to combine.
 - If seams appear in the combine image, increase the overlap.
 
 # Installation
