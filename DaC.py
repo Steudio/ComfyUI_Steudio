@@ -55,34 +55,39 @@ def create_tile_coordinates(image_width, image_height, tile_width, tile_height, 
             if col == grid_x - 1:
                 x = image_width - tile_width
             tiles.append((x, y))
-            matrix[row][col] = f"({x},{y})"
-
+    
     if tile_order == 1:  # Spiral order
         # Rearrange tiles in an outward clockwise spiral pattern starting from the center
         spiral_tiles = []
-        center_x, center_y = num_columns // 2, num_rows // 2
-        x, y = center_x, center_y
+        visited = set()
+        x, y = num_columns // 2, num_rows // 2
         dx, dy = 1, 0  # Start moving right
-        layer, steps = 1, 0
+        layer = 1
 
         while len(spiral_tiles) < len(tiles):
             for _ in range(2):
                 for _ in range(layer):
-                    if 0 <= x < num_columns and 0 <= y < num_rows:
+                    if 0 <= x < num_columns and 0 <= y < num_rows and (x, y) not in visited:
                         index = y * num_columns + x
                         if index < len(tiles):
                             spiral_tiles.append(tiles[index])
-                        steps += 1
+                            visited.add((x, y))
                     x += dx
                     y += dy
                 dx, dy = -dy, dx  # Rotate direction clockwise
             layer += 1
 
-        # Reverse the tiles
         spiral_tiles.reverse()
         tiles = spiral_tiles
 
+    # Rebuild matrix to match tile order
+    for i, (x, y) in enumerate(tiles):
+        row, col = y // (tile_height - overlap_y), x // (tile_width - overlap_x)
+        matrix[row][col] = f"{i + 1} ({x},{y})"
+
     return tiles, matrix
+
+
 
 class DaC_Algorithm:
     @classmethod

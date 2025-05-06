@@ -116,6 +116,9 @@ Coming Soon!
 Install via ComfyUI-Manager or Clone this repo into `custom_modules`:
 
 # Changelog
+`Version 2.0.2` (2025-05-06)<br>
+- Tile numbers have been added next to the coordinates in the matrix UI.
+
 `Version 2.0.0` (2025-05-04)<br>
 - Improved user experience.
 - Scaling using model is now optional.
