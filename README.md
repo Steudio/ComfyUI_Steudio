@@ -94,7 +94,7 @@ Workflow > Browse Templates > comfyui_steudio
 [TeaCache](https://github.com/welltop-cn/ComfyUI-TeaCache)
 
 ## Video Tutorial
-Coming Soon!
+[YouTube](https://youtu.be/yDNP642SN-U)
 
 :100: cropped comparison.<br>
 <a href="https://imgsli.com/Mzc2MzA3">
