@@ -4,7 +4,7 @@
 
 </center>
 
-# Divide and Conquer Node Suite 2.0.0
+# Divide and Conquer Node Suite 2.0.2
 
 :pushpin: If you're updating from version 1.x.x, make sure to replace the old nodes with the new ones in your workflow to avoid potential errors.
 
