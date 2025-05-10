@@ -31,6 +31,8 @@ Data to pass along to following nodes: **Divide Image and Select Tile** and **Co
 **`ui:`**
 Image processing algorithm summary.<br>
 
+<img src="Images/Algo_UI.png" alt="Node" style="width: 50%;">
+
 ### Parameters
 
 
@@ -60,6 +62,8 @@ All tiles (0) or specific tile (#) to path through (#).<br>
 **`ui::`**
 Matrix visualization.<br>
 
+<img src="Images/Divide_UI.png" alt="Node" style="width: 50%;">
+
 ### Parameters
 **`position`**:
 Select the tile(s) to path through. Position (0) indicates all the tiles, while Position (#) specifies an individual tile.<br>
@@ -80,6 +84,8 @@ The combined image, made of multiple tiles.<br>
 **`ui::`**
 Matrix visualization.<br>
 
+<img src="Images/Divide_UI.png" alt="Node" style="width: 50%;">
+
 ## Workflow example
 Get the workflow directly from ComfyUI menu:<br>
 Workflow > Browse Templates > comfyui_steudio
@@ -94,7 +100,7 @@ Workflow > Browse Templates > comfyui_steudio
 [TeaCache](https://github.com/welltop-cn/ComfyUI-TeaCache)
 
 ## Video Tutorial
-[![YouTube Video](https://img.youtube.com/vi/yDNP642SN-U/0.jpg)](https://youtu.be/yDNP642SN-U)
+Coming Soon!
 
 :100: cropped comparison.<br>
 <a href="https://imgsli.com/Mzc2MzA3">
@@ -116,9 +122,6 @@ Workflow > Browse Templates > comfyui_steudio
 Install via ComfyUI-Manager or Clone this repo into `custom_modules`:
 
 # Changelog
-`Version 2.0.2` (2025-05-06)<br>
-- Tile numbers have been added next to the coordinates in the matrix UI.
-
 `Version 2.0.0` (2025-05-04)<br>
 - Improved user experience.
 - Scaling using model is now optional.
