@@ -100,7 +100,7 @@ Workflow > Browse Templates > comfyui_steudio
 [TeaCache](https://github.com/welltop-cn/ComfyUI-TeaCache)
 
 ## Video Tutorial
-Coming Soon!
+[![YouTube Video](https://img.youtube.com/vi/yDNP642SN-U/0.jpg)](https://youtu.be/yDNP642SN-U)
 
 :100: cropped comparison.<br>
 <a href="https://imgsli.com/Mzc2MzA3">
@@ -122,6 +122,9 @@ Coming Soon!
 Install via ComfyUI-Manager or Clone this repo into `custom_modules`:
 
 # Changelog
+`Version 2.0.2` (2025-05-06)<br>
+- Tile numbers have been added next to the coordinates in the matrix UI.
+
 `Version 2.0.0` (2025-05-04)<br>
 - Improved user experience.
 - Scaling using model is now optional.
