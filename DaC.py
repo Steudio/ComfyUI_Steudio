@@ -410,7 +410,11 @@ class Combine_Tiles:
             elif x != 0 and x !=upscaled_width - tile_width and y !=0 and y != upscaled_height - tile_height and upscaled_height != tile_height and upscaled_width != tile_width:
                 draw.rectangle([f_overlap_x, f_overlap_y, tile_width - f_overlap_x, tile_height - f_overlap_y], fill=255)
 
-            mask = mask.filter(ImageFilter.GaussianBlur(radius=(blend_x, blend_y)))
+            # Use a box blur if overlap is getting too narrow
+            if overlap_x <= 64 or overlap_y <= 64:
+                mask = mask.filter(ImageFilter.BoxBlur(radius=(blend_x, blend_y)))
+            else:
+                mask = mask.filter(ImageFilter.GaussianBlur(radius=(blend_x, blend_y)))
 
             mask_np = np.array(mask) / 255.0
             mask_tensor = torch.tensor(mask_np, dtype=images.dtype).unsqueeze(0).unsqueeze(-1)

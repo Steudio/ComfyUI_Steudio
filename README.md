@@ -4,7 +4,7 @@
 
 </center>
 
-# Divide and Conquer Upscaler v2.0.2
+# Divide and Conquer Node Suite 2.0.3
 
 :pushpin: If you're updating from version 1.x.x, make sure to replace the old nodes with the new ones in your workflow to avoid potential errors.
 
@@ -122,6 +122,9 @@ Workflow > Browse Templates > comfyui_steudio
 Install via ComfyUI-Manager or Clone this repo into `custom_modules`:
 
 # Changelog
+`Version 2.0.3` (2025-05-14)<br>
+- Replaced Gaussian blur with Box blur for overlap ≤ 64 to avoid masking issues.
+
 `Version 2.0.2` (2025-05-06)<br>
 - Tile numbers have been added next to the coordinates in the matrix UI.
 
