@@ -1,8 +1,8 @@
 {
   "id": "ef5ed1ef-8aea-4e25-a951-a839006006dc",
   "revision": 0,
-  "last_node_id": 106,
-  "last_link_id": 158,
+  "last_node_id": 107,
+  "last_link_id": 163,
   "nodes": [
     {
       "id": 23,
@@ -66,7 +66,7 @@
       ],
       "size": [
         320,
-        110
+        130
       ],
       "flags": {},
       "order": 19,
@@ -95,7 +95,8 @@
       "widgets_values": [
         "flux",
         0.4,
-        3
+        3,
+        1
       ],
       "shape": 1
     },
@@ -146,7 +147,7 @@
         -120
       ],
       "size": [
-        210,
+        214,
         330
       ],
       "flags": {},
@@ -239,7 +240,7 @@
           "type": "DAC_DATA",
           "slot_index": 0,
           "links": [
-            81
+            160
           ]
         }
       ],
@@ -300,7 +301,7 @@
         {
           "name": "IMAGE",
           "type": "IMAGE",
-          "link": 127
+          "link": 162
         }
       ],
       "outputs": [
@@ -453,7 +454,7 @@
           "label": "RIGHT",
           "name": "image_a",
           "type": "IMAGE",
-          "link": 158
+          "link": 163
         },
         {
           "dir": 3,
@@ -842,7 +843,7 @@
         {
           "name": "ui",
           "type": "*",
-          "link": 151
+          "link": 161
         }
       ],
       "outputs": [],
@@ -969,7 +970,7 @@
       ],
       "size": [
         260,
-        110
+        130
       ],
       "flags": {},
       "order": 8,
@@ -999,7 +1000,8 @@
       "widgets_values": [
         "Florence-2-large",
         "fp16",
-        "sdpa"
+        "sdpa",
+        false
       ],
       "shape": 1
     },
@@ -1790,7 +1792,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            157
+            159
           ]
         }
       ],
@@ -1801,80 +1803,6 @@
       ],
       "color": "#233",
       "bgcolor": "#355",
-      "shape": 1
-    },
-    {
-      "id": 52,
-      "type": "Combine Tiles",
-      "pos": [
-        3380,
-        -120
-      ],
-      "size": [
-        262,
-        126
-      ],
-      "flags": {},
-      "order": 26,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 157
-        },
-        {
-          "name": "dac_data",
-          "type": "DAC_DATA",
-          "link": 81
-        }
-      ],
-      "outputs": [
-        {
-          "name": "image",
-          "type": "IMAGE",
-          "links": [
-            127,
-            158
-          ]
-        },
-        {
-          "name": "ui",
-          "type": "UI",
-          "links": [
-            151
-          ]
-        },
-        {
-          "name": "full_mask",
-          "type": "MASK",
-          "links": null
-        },
-        {
-          "name": "tile_masks",
-          "shape": 6,
-          "type": "MASK",
-          "links": null
-        },
-        {
-          "name": "tile_images",
-          "shape": 6,
-          "type": "IMAGE",
-          "links": null
-        },
-        {
-          "name": "tile_images_with_alpha",
-          "shape": 6,
-          "type": "IMAGE",
-          "links": null
-        }
-      ],
-      "properties": {
-        "cnr_id": "comfyui_steudio",
-        "ver": "368b98166584db24beb095c96a2bad9fb442235b",
-        "Node name for S&R": "Combine Tiles"
-      },
-      "widgets_values": [],
       "shape": 1
     },
     {
@@ -1899,6 +1827,56 @@
       ],
       "color": "#432",
       "bgcolor": "#653",
+      "shape": 1
+    },
+    {
+      "id": 107,
+      "type": "Combine Tiles",
+      "pos": [
+        3380,
+        -120
+      ],
+      "size": [
+        210,
+        70
+      ],
+      "flags": {},
+      "order": 26,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 159
+        },
+        {
+          "name": "dac_data",
+          "type": "DAC_DATA",
+          "link": 160
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            162,
+            163
+          ]
+        },
+        {
+          "name": "ui",
+          "type": "UI",
+          "links": [
+            161
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui_steudio",
+        "ver": "2.0.4",
+        "Node name for S&R": "Combine Tiles"
+      },
       "shape": 1
     }
   ],
@@ -2072,14 +2050,6 @@
       "MODEL"
     ],
     [
-      81,
-      31,
-      0,
-      52,
-      1,
-      "DAC_DATA"
-    ],
-    [
       110,
       39,
       0,
@@ -2126,14 +2096,6 @@
       37,
       0,
       "IMAGE"
-    ],
-    [
-      127,
-      52,
-      0,
-      82,
-      0,
-      "*"
     ],
     [
       128,
@@ -2216,14 +2178,6 @@
       "*"
     ],
     [
-      151,
-      52,
-      1,
-      99,
-      0,
-      "*"
-    ],
-    [
       152,
       17,
       2,
@@ -2232,16 +2186,40 @@
       "*"
     ],
     [
-      157,
+      159,
       51,
       0,
-      52,
+      107,
       0,
       "IMAGE"
     ],
     [
-      158,
-      52,
+      160,
+      31,
+      0,
+      107,
+      1,
+      "DAC_DATA"
+    ],
+    [
+      161,
+      107,
+      1,
+      99,
+      0,
+      "*"
+    ],
+    [
+      162,
+      107,
+      0,
+      82,
+      0,
+      "IMAGE"
+    ],
+    [
+      163,
+      107,
       0,
       29,
       0,
@@ -2370,13 +2348,13 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 1,
+      "scale": 0.5644739300537773,
       "offset": [
-        -90,
-        220
+        -1011.3573411259459,
+        541.4692682550533
       ]
     },
-    "frontendVersion": "1.16.9",
+    "frontendVersion": "1.21.0",
     "0246.VERSION": [
       0,
       0,
