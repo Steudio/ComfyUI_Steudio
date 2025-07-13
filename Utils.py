@@ -69,6 +69,9 @@ class Ratio_Calculator:
         simplified_width = width // gcd
         simplified_height = height // gcd
 
+        # Calculate megapixel
+        f_megapixel = "{:,} pixels".format(width * height)
+
         # Find the closest ratio
         closest_ratio = None
         min_difference = float('inf')
@@ -79,7 +82,7 @@ class Ratio_Calculator:
                 closest_ratio = name
 
         # return closest_ratio,
-        return {"ui": {"text": closest_ratio}, "result": (closest_ratio,)}
+        return {"ui": {"text": f"{closest_ratio}\n{f_megapixel}"},"result": (closest_ratio,)}
 
 class Ratio_to_Size:
     def __init__(self):
