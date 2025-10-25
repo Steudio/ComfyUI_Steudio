@@ -23,7 +23,7 @@ class DaC_Algorithm:
                 "tile_width": ("INT", {"default": 1024,}),
                 "tile_height": ("INT", {"default": 1024,}),
                 "min_overlap": (list(OVERLAP_DICT.keys()), {"default": "1/32 Tile",}),
-                "min_scale_factor": ("FLOAT", {"default": 3.0, "min": 1.0, "max": 8.0}),
+                "min_scale_factor": ("FLOAT", {"default": 3.0, "min": 1.0, "max": 16.0, "step": 0.01}),
                 "tile_order": (list(TILE_ORDER_DICT.keys()), {"default": "spiral",}),
                 "scaling_method": (SCALING_METHODS, {"default": "lanczos"}),  
             },
@@ -46,45 +46,64 @@ Steudio
 
     def execute(self, image, scaling_method, tile_width, tile_height, min_overlap, min_scale_factor, tile_order, upscale_model=None, use_upscale_with_model=True):
 
-        overlap = OVERLAP_DICT.get(min_overlap, 0)  # Default to 0 if the key is not found
         tile_order = TILE_ORDER_DICT.get(tile_order, 0)  # Default to 0 if the key is not found
-
         _, height, width, _ = image.shape
 
-        # Calculate initial overlaps
-        overlap_x = calculate_overlap(tile_width, overlap)
-        overlap_y = calculate_overlap(tile_height, overlap)
+        # --- Auto overlap branch ---
+        if min_overlap == "Auto":
+            # If image smaller than tile, upscale to minimum tile size
+            target_width = max(width, tile_width)
+            target_height = max(height, tile_height)
 
-        # Ensure min_scale_factor
-        min_scale_factor = max(min_scale_factor, MIN_SCALE_FACTOR_THRESHOLD)
+            upscale_ratio_x = target_width / width
+            upscale_ratio_y = target_height / height
+            upscale_ratio = max(upscale_ratio_x, upscale_ratio_y)
 
-        if width <= height:
-            # Calculate initial upscaled width based on min_scale_factor
-            multiply_factor = math.ceil(min_scale_factor * width / tile_width)
-            while True:
-                upscaled_width = tile_width * multiply_factor
-                grid_x = math.ceil(upscaled_width / tile_width)
-                upscaled_width = (tile_width * grid_x) - (overlap_x * (grid_x - 1))
-                upscale_ratio = upscaled_width / width
-                if upscale_ratio >= min_scale_factor:
-                    break
-                multiply_factor += 1
-            upscaled_height = int(height * upscale_ratio)
-            grid_y = math.ceil((upscaled_height - overlap_y) / (tile_height - overlap_y))
-            overlap_y = round((tile_height * grid_y - upscaled_height) / (grid_y - 1))
-        else:
-            multiply_factor = math.ceil(min_scale_factor * height / tile_height)
-            while True:
-                upscaled_height = tile_height * multiply_factor
-                grid_y = math.ceil(upscaled_height / tile_height)
-                upscaled_height = (tile_height * grid_y) - (overlap_y * (grid_y - 1))
-                upscale_ratio = upscaled_height / height
-                if upscale_ratio >= min_scale_factor:
-                    break
-                multiply_factor += 1
             upscaled_width = int(width * upscale_ratio)
-            grid_x = math.ceil((upscaled_width - overlap_x) / (tile_width - overlap_x))
-            overlap_x = round((tile_width * grid_x - upscaled_width) / (grid_x - 1))
+            upscaled_height = int(height * upscale_ratio)
+
+            grid_x = math.ceil(upscaled_width / tile_width)
+            grid_y = math.ceil(upscaled_height / tile_height)
+
+            overlap_x = 0 if grid_x == 1 else round((tile_width * grid_x - upscaled_width) / (grid_x - 1))
+            overlap_y = 0 if grid_y == 1 else round((tile_height * grid_y - upscaled_height) / (grid_y - 1))
+        else:
+            overlap = OVERLAP_DICT.get(min_overlap, 0)  # Default to 0 if the key is not found
+
+            # Calculate initial overlaps
+            overlap_x = calculate_overlap(tile_width, overlap)
+            overlap_y = calculate_overlap(tile_height, overlap)
+
+            # Ensure min_scale_factor
+            min_scale_factor = max(min_scale_factor, MIN_SCALE_FACTOR_THRESHOLD)
+
+            if width <= height:
+                # Calculate initial upscaled width based on min_scale_factor
+                multiply_factor = math.ceil(min_scale_factor * width / tile_width)
+                while True:
+                    upscaled_width = tile_width * multiply_factor
+                    grid_x = math.ceil(upscaled_width / tile_width)
+                    upscaled_width = (tile_width * grid_x) - (overlap_x * (grid_x - 1))
+                    upscale_ratio = upscaled_width / width
+                    if upscale_ratio >= min_scale_factor:
+                        break
+                    multiply_factor += 1
+                upscaled_height = int(height * upscale_ratio)
+                grid_y = math.ceil((upscaled_height - overlap_y) / (tile_height - overlap_y))
+                overlap_y = round((tile_height * grid_y - upscaled_height) / (grid_y - 1))
+            else:
+                multiply_factor = math.ceil(min_scale_factor * height / tile_height)
+                while True:
+                    upscaled_height = tile_height * multiply_factor
+                    grid_y = math.ceil(upscaled_height / tile_height)
+                    upscaled_height = (tile_height * grid_y) - (overlap_y * (grid_y - 1))
+                    upscale_ratio = upscaled_height / height
+                    if upscale_ratio >= min_scale_factor:
+                        break
+                    multiply_factor += 1
+                upscaled_width = int(width * upscale_ratio)
+                grid_x = math.ceil((upscaled_width - overlap_x) / (tile_width - overlap_x))
+                overlap_x = round((tile_width * grid_x - upscaled_width) / (grid_x - 1))
 
         effective_upscale = round(upscaled_width / width, 2)
         upscaled_image_size = f"{upscaled_width}x{upscaled_height}"

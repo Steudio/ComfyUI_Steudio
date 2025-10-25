@@ -117,6 +117,9 @@ Anchor positions:
         if mask.ndim == 3:
             mask = mask[..., 0]
 
+        # track if the provided mask was empty so we can force canvas to white
+        mask_was_empty = False
+
         if torch.is_floating_point(mask) and mask.max() > 0:
             if mask.max() <= 1.0:
                 mask = mask.clamp(0.0, 1.0).float()
@@ -129,6 +132,13 @@ Anchor positions:
                 mask = (mask * self.MASK_VAL).clamp(0, self.MASK_VAL).to(torch.uint8)
             else:
                 mask = mask.to(torch.uint8)
+
+        # If the mask is empty (all zeros), make the output mask full white (1.0)
+        # Use a floating-point mask of ones so downstream receives value 1.0
+        if mask.max() == 0:
+            mask = torch.ones((img_H, img_W), device=image.device, dtype=torch.float32)
+            preserve_float = True
+            mask_was_empty = True
 
         img_chw = image.permute(2, 0, 1)
         msk_chw = mask.unsqueeze(0)
@@ -285,8 +295,24 @@ Anchor positions:
         # Outputs
         img_out = img_chw.permute(1, 2, 0)
         inpaint_tensor = msk_chw * (cov_chw > 0).to(msk_chw.dtype)
-        canvas_tensor = (1.0 - (cov_chw > 0).float()) if preserve_float \
-                        else (1 - (cov_chw > 0).to(msk_chw.dtype))
+        # Canvas: white where padded, black where image.
+        # If there is no padding at all, make the canvas uniformly white.
+        base = (cov_chw > 0)
+        if preserve_float:
+            canvas_tensor = 1.0 - base.float()
+        else:
+            canvas_tensor = 1 - base.to(msk_chw.dtype)
+
+        # When there is no padding anywhere, canvas should be full white
+        if base.all().item():
+            canvas_tensor = torch.ones_like(canvas_tensor)
+
+        # If the original mask was empty, force the canvas to full white as well
+        # Only override canvas to full white when the mask was empty AND there is no padding.
+        # This preserves padded-area visualization (white around image) for pad/crop and other modes
+        # where padding actually exists.
+        if mask_was_empty and base.all().item():
+            canvas_tensor = torch.ones_like(canvas_tensor)
 
         if squeezed:
             img_out = img_out.unsqueeze(0)

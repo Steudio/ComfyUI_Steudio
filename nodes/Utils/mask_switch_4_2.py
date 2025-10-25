@@ -4,7 +4,7 @@ class mask_switch_4_2:
         "inpaint": None,
         "outpaint": None,
         "context": None,
-        "white": None
+        "canvas": None
     }
 
     @classmethod

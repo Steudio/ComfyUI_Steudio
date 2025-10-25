@@ -51,7 +51,7 @@ class Ratio_to_Size:
                 ratio_label = closest_ratio
             else:
                 aspect_width, aspect_height = 1, 1
-                ratio_label = "1:1 ◻"  # fallback if no image
+                ratio_label = "1:1 ◻"
         else:
             aspect_width, aspect_height = RATIO_PRESETS.get(ratio, (1, 1))
             ratio_label = ratio
@@ -62,7 +62,7 @@ class Ratio_to_Size:
                 _, img_h, img_w, _ = image.shape
                 megapixel = (img_w * img_h) / (1024 * 1024)
             else:
-                megapixel = 1.0  # fallback if no image provided
+                megapixel = 1.0
 
         # --- Dimension calculation ---
         target_ratio = aspect_width / aspect_height
@@ -76,33 +76,50 @@ class Ratio_to_Size:
         width = max(divisible, (width // divisible) * divisible)
         height = max(divisible, (height // divisible) * divisible)
 
-        # Try small adjustments based on priority
-        best_w, best_h = width, height
-        best_ratio_diff = abs((width / height) - target_ratio)
-        best_pixel_diff = abs((width * height) - target_pixels) / target_pixels
+        # --- Adjustment logic ---
+        if priority == "megapixel":
+            if aspect_width == aspect_height:  # enforce square
+                side = int((target_pixels) ** 0.5)
+                side = max(divisible, (side // divisible) * divisible)
+                width = height = side
+            else:
+                # existing adjustment loop
+                best_w, best_h = width, height
+                best_ratio_diff = abs((width / height) - target_ratio)
+                best_pixel_diff = abs((width * height) - target_pixels) / target_pixels
 
-        for dw in (-divisible, 0, divisible):
-            for dh in (-divisible, 0, divisible):
-                w = max(divisible, width + dw)
-                h = max(divisible, height + dh)
-                ratio_diff = abs((w / h) - target_ratio)
-                pixel_diff = abs((w * h) - target_pixels) / target_pixels
+                for dw in (-divisible, 0, divisible):
+                    for dh in (-divisible, 0, divisible):
+                        w = max(divisible, width + dw)
+                        h = max(divisible, height + dh)
+                        ratio_diff = abs((w / h) - target_ratio)
+                        pixel_diff = abs((w * h) - target_pixels) / target_pixels
 
-                if priority == "ratio":
-                    # Ratio first, then pixel tolerance
+                        if pixel_diff < best_pixel_diff and ratio_diff <= 0.05:
+                            best_w, best_h = w, h
+                            best_pixel_diff = pixel_diff
+                            best_ratio_diff = ratio_diff
+
+                width, height = best_w, best_h
+
+        elif priority == "ratio":
+            best_w, best_h = width, height
+            best_ratio_diff = abs((width / height) - target_ratio)
+            best_pixel_diff = abs((width * height) - target_pixels) / target_pixels
+
+            for dw in (-divisible, 0, divisible):
+                for dh in (-divisible, 0, divisible):
+                    w = max(divisible, width + dw)
+                    h = max(divisible, height + dh)
+                    ratio_diff = abs((w / h) - target_ratio)
+                    pixel_diff = abs((w * h) - target_pixels) / target_pixels
+
                     if ratio_diff < best_ratio_diff and pixel_diff <= 0.05:
                         best_w, best_h = w, h
                         best_ratio_diff = ratio_diff
                         best_pixel_diff = pixel_diff
 
-                elif priority == "megapixel":
-                    # Pixel count first, then ratio tolerance
-                    if pixel_diff < best_pixel_diff and ratio_diff <= 0.05:
-                        best_w, best_h = w, h
-                        best_pixel_diff = pixel_diff
-                        best_ratio_diff = ratio_diff
-
-        width, height = best_w, best_h
+            width, height = best_w, best_h
 
         f_megapixel = "{:,}".format(width * height)
         f_precision = round((aspect_width / aspect_height) - (width / height), 4)

@@ -1,6 +1,7 @@
 # _utils_.py
 
 import numpy as np
+import math
 
 def calculate_overlap(tile_size, overlap_fraction):
     return int(overlap_fraction * tile_size)
@@ -13,8 +14,17 @@ def create_tile_coordinates(image_width, image_height, tile_width, tile_height,
     base_tiles = []
     for row in range(grid_y):
         for col in range(grid_x):
-            x = min(col * offset_x, image_width - tile_width)
-            y = min(row * offset_y, image_height - tile_height)
+            x = col * offset_x
+            y = row * offset_y
+
+            # Clamp rightmost column to image boundary
+            if col == grid_x - 1:
+                x = image_width - tile_width
+
+            # Clamp bottom row to image boundary
+            if row == grid_y - 1:
+                y = image_height - tile_height
+
             base_tiles.append((x, y, row, col))
 
     if tile_order == 1:
@@ -63,14 +73,14 @@ def generate_tile_mask_np(x, y, tile_width, tile_height, upscaled_width, upscale
     elif x == upscaled_width - tile_width and y == upscaled_height - tile_height and upscaled_height != tile_height and upscaled_width != tile_width:
         mask_np[f_overlap_y:tile_height, f_overlap_x:tile_width] = 1.0
     # 5678 Detect corners 3 edges and grid =1
-    elif x == 0 and y == 0 and upscaled_height == tile_height:
-        mask_np[0:tile_height, 0:tile_width - f_overlap_x] = 1.0
-    elif x == upscaled_width - tile_width and y == 0 and upscaled_height == tile_height:
-        mask_np[0:tile_height, f_overlap_x:tile_width] = 1.0
-    elif x == 0 and y == 0 and upscaled_width == tile_width:
-        mask_np[0:tile_height - f_overlap_y, 0:tile_width] = 1.0
-    elif x == 0 and y == upscaled_height - tile_height and upscaled_width == tile_width:
-        mask_np[f_overlap_y:tile_height, 0:tile_width] = 1.0
+    elif x == 0 and y == 0 and upscaled_height == tile_height: # left edge
+        mask_np[0:tile_height, 0:tile_width - f_overlap_x] = 1.0 # left edge
+    elif x == upscaled_width - tile_width and y == 0 and upscaled_height == tile_height: # right edge
+        mask_np[0:tile_height, f_overlap_x:tile_width] = 1.0 # right edge
+    elif x == 0 and y == 0 and upscaled_width == tile_width: # top edge
+        mask_np[0:tile_height - f_overlap_y, 0:tile_width] = 1.0 # top edge
+    elif x == 0 and y == upscaled_height - tile_height and upscaled_width == tile_width: # bottom edge
+        mask_np[f_overlap_y:tile_height, 0:tile_width] = 1.0 # bottom edge
     # 9 12 Detect top or bottom edges
     elif x != 0 and x != upscaled_width - tile_width and y == 0 and upscaled_height != tile_height and upscaled_width != tile_width:
         mask_np[0:tile_height - f_overlap_y, f_overlap_x:tile_width - f_overlap_x] = 1.0

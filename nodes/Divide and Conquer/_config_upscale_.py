@@ -9,7 +9,9 @@ OVERLAP_DICT = {
     "1/8 Tile": 0.125,
     "1/4 Tile": 0.25,
     "1/2 Tile": 0.5,
+    "Auto": None,   # special case, handled in execute()
 }
+
 
 # Tile ordering methods
 TILE_ORDER_DICT = {
